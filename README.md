@@ -1,1 +1,0 @@
-# Sonde_X_Vigili_Di_Villalagarina

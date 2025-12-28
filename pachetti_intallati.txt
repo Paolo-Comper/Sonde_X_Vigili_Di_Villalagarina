@@ -1,0 +1,3 @@
+@flowfuse/node-red-dashboard
+@flowfuse/node-red-dashboard-2-ui-led
+node-red-contrib-web-worldmap

@@ -1,37 +1,36 @@
-const ctx = document.getElementById("barChart").getContext("2d");
+import { onDatiAggiornati } from "./fetch_data.js";
 
-//! TEMPORANEO POI SI FA CON IL JSON
-const SOGLIA = 5;
-
-const dati =
+onDatiAggiornati((staticData, dynamicData) =>
 {
-    labels: ["A", "B", "C", "D", "E"],
-    values: [3, 7, 4.5, 8, 2]
-};
-
-//? PENSO FACCIA UN ARRAY DI COLORI ????
-const colori = dati.values.map(v => {
-    return v > SOGLIA ? "rgba(255, 80, 80, 0.8)"
-                      : "rgba(80, 255, 80, 0.8)";
+    aggiornaGrafo(staticData, dynamicData);
 });
+
+const ctx = document.getElementById("barChart").getContext("2d");
 
 window.chart = new Chart(ctx,
     {
         type: "bar",
         data:
         {
-            labels: dati.labels,
+            labels: [], //! NOMI
             datasets:
                 [
                     {
                         label: "Valori sensori",
-                        data: dati.values,
-                        backgroundColor: colori
+                        data: [], //! VALORI
+                        backgroundColor: [] //! COLORI
                     }
                 ]
         },
         options:
         {
+            plugins:
+            {
+                legend:
+                {
+                    display: false
+                }
+            },
             animation:
             {
                 duration: 100
@@ -46,12 +45,15 @@ window.chart = new Chart(ctx,
         }
     });
 
-function aggiornaGrafico(nuoviValori) {
-    chart.data.datasets[0].data = nuoviValori;
+function aggiornaGrafo(staticData, dynamicData) {
+    let valori_array = Object.values(dynamicData.valori);
+    chart.data.datasets[0].data = valori_array;
+
+    chart.data.labels = staticData.data.map(v => v.label);
 
     chart.data.datasets[0].backgroundColor =
-        nuoviValori.map(v =>
-            v > SOGLIA ? "rgba(255, 80, 80, 0.8)"
+        valori_array.map(v =>
+            v > 5 ? "rgba(255, 80, 80, 0.8)"
                        : "rgba(80, 255, 80, 0.8)"
         );
 

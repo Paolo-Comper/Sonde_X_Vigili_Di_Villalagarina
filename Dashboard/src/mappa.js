@@ -1,4 +1,3 @@
-// Espongo SOLO la mappa, nient’altro
 window.maplibre_map = null;
 
 let last_static_map = null;
@@ -10,47 +9,11 @@ onDatiAggiornati((staticData, dynamicData) => {
     last_static_map = staticData;
     last_dynamic_map = dynamicData;
 
-    // Se la mappa è già pronta, aggiorna i punti
-    aggiornaMappaConNuoviDati(staticData, dynamicData);
-});
-
-
-function aggiornaMappaConNuoviDati(staticData, dynamicData) {
     if (!window.maplibre_map)
         return;
 
-    const source = window.maplibre_map.getSource("nodi");
-
-    if (!source)
-        return;
-
-    const features = staticData.nodi.map(nodo => {
-        const valore = dynamicData.valori[nodo.id];
-        const stato = valore > staticData.soglia ? "alert" : "ok";
-
-        return {
-            type: "Feature",
-            properties:
-            {
-                id: nodo.id,
-                nome: nodo.nome,
-                valore: valore,
-                stato: stato
-            },
-            geometry:
-            {
-                type: "Point",
-                coordinates: [nodo.lng, nodo.lat]
-            }
-        };
-    });
-
-    source.setData(
-        {
-            type: "FeatureCollection",
-            features
-        });
-}
+    aggiornaMappaConNuoviDati(staticData, dynamicData);
+});
 
 
 async function caricaMappa() {
@@ -65,48 +28,24 @@ async function caricaMappa() {
     window.maplibre_map = map;
 
     map.on("load", () => {
-        if (last_static && last_dynamic) {
-            aggiungiPunti(map, last_static_map, last_dynamic_map);
-            aggiungiCollegamenti(map, last_static_map);
+        if (last_static_map && last_dynamic_map) {
+            inizializzaMappa(map, last_static_map, last_dynamic_map);
         }
     });
-
 }
 
-function aggiungiPunti(map, static_data, dynamic_data) {
-    const SOGLIA = static_data.soglia;
-
-    const features = static_data.nodi.map(nodo => {
-        const valore = dynamic_data.valori[nodo.id];
-        const stato = valore > SOGLIA ? "alert" : "ok";
-
-        return {
-            type: "Feature",
-            properties:
-            {
-                id: nodo.id,
-                nome: nodo.nome,
-                valore: valore,
-                stato: stato
-            },
-            geometry:
-            {
-                type: "Point",
-                coordinates: [nodo.lng, nodo.lat]
-            }
-        };
-    });
-
+function inizializzaMappa(map, static_data, dynamic_data) {
+    //? SOURCE NODI
     map.addSource("nodi",
         {
             type: "geojson",
-            data:
-            {
-                type: "FeatureCollection",
-                features: features
-            }
+            data: creaFeatureCollectionNodi(static_data, dynamic_data)
         });
 
+    //? LINK
+    aggiungiCollegamenti(map, static_data);
+
+    //? LAYER PUNTI OK
     map.addLayer(
         {
             id: "nodi-ok",
@@ -121,6 +60,7 @@ function aggiungiPunti(map, static_data, dynamic_data) {
             }
         });
 
+    //? LAYER PUNTI ALERT
     map.addLayer(
         {
             id: "nodi-alert",
@@ -139,6 +79,48 @@ function aggiungiPunti(map, static_data, dynamic_data) {
     map.on("click", "nodi-alert", e => mostraPopup(e, map));
 }
 
+function creaFeatureCollectionNodi(static_data, dynamic_data) {
+    const SOGLIA = static_data.soglia;
+
+    const features = static_data.data.map(nodo => {
+        const valore = dynamic_data.valori[nodo.id];
+        const stato = valore > SOGLIA ? "alert" : "ok";
+
+        return {
+            type: "Feature",
+            properties:
+            {
+                id: nodo.id,
+                nome: nodo.label,
+                valore: valore,
+                stato: stato
+            },
+            geometry:
+            {
+                type: "Point",
+                coordinates: [nodo.lon, nodo.lat]
+            }
+        };
+    });
+
+    return {
+        type: "FeatureCollection",
+        features
+    };
+}
+
+function aggiornaMappaConNuoviDati(static_data, dynamic_data) {
+    const map = window.maplibre_map;
+    const source = map.getSource("nodi");
+
+    if (!source)
+        return;
+
+    source.setData(
+        creaFeatureCollectionNodi(static_data, dynamic_data)
+    );
+}
+
 function mostraPopup(e, map) {
     const p = e.features[0].properties;
 
@@ -153,9 +135,9 @@ function mostraPopup(e, map) {
 }
 
 function aggiungiCollegamenti(map, static_data) {
-    const linee = static_data.archi.map(a => {
-        const from = static_data.nodi.find(n => n.id === a.from);
-        const to = static_data.nodi.find(n => n.id === a.to);
+    const linee = static_data.links.map(a => {
+        const from = static_data.data.find(n => n.id === a.from);
+        const to = static_data.data.find(n => n.id === a.to);
 
         return {
             type: "Feature",
@@ -164,8 +146,8 @@ function aggiungiCollegamenti(map, static_data) {
                 type: "LineString",
                 coordinates:
                     [
-                        [from.lng, from.lat],
-                        [to.lng, to.lat]
+                        [from.lon, from.lat],
+                        [to.lon, to.lat]
                     ]
             }
         };
@@ -188,12 +170,13 @@ function aggiungiCollegamenti(map, static_data) {
             source: "archi",
             paint:
             {
-                "line-width": 2,
-                "line-color": "#555555",
-                "line-opacity": 0.6
+                "line-width": 1.5,
+                "line-color": "#666666",
+                "line-opacity": 0.45
             }
+
         });
 }
 
-// Avvio
+// AVVIO
 caricaMappa();

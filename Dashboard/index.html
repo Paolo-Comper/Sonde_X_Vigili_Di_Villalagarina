@@ -25,7 +25,7 @@
                 <li class="uk-active"><a href="#">Menu</a></li>
                 <li><a href="#" data-target="sezione-intro">Intro</a></li>
                 <li><a href="#" data-target="sezione-grafico">Grafico a barre</a></li>
-                <li><a href="#" data-target="sezione-grafo">Grafo</a></li>
+                <li><a href="#" data-target="sezione-grafo">Grafo fiumi</a></li>
                 <li><a href="#" data-target="sezione-mappa">Mappa</a></li>
             </ul>
 
@@ -40,10 +40,18 @@
     <!--~ INTRO -->
     <div id="sezione-intro" class="sezione">
         <h2>Intro</h2>
+        <div class="contenitore">
+            <div id="riga_scuola">
+                <img src="res/FotoScuola.png" alt="Foto della scuola" class="piccola">
+                <img src="res/LogoScuola.png" alt="Logo della scuola" class="piccola">
+            </div>
+            <img src="res/LogoVigiliDelFuoco.png" alt="Logo vigili del fuoco" class="grande">
+        </div>
     </div>
 
     <!--~ GRFICO -->
     <div id="sezione-grafico" class="sezione">
+        <h2>Grafico a barre</h2>
         <div class="grafico">
             <canvas id="barChart"></canvas>
         </div>
@@ -59,11 +67,8 @@
 
     <!--~ MAPPA -->
     <div id="sezione-mappa" class="sezione">
-        <h3 style="margin-bottom: 16px;">Mappa dei fiumi</h3>
-
-
-
-            <div id="map" style="width:100%; height:500px;"></div>
+        <h3 style="margin-bottom: 16px;">Mappa</h3>
+        <div id="map" style="width:100%; height:500px;"></div>
     </div>
 
 
@@ -74,6 +79,10 @@
     <!--? DATA -->
     <script type="module" src="src/fetch_data.js"></script>
 
+    <!--? GESTIONE COSE MENU -->
+    <script src="src/cose_che_spariscono.js"></script>
+
+
     <!--? GRAFICO -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script type="module" src="src/grafico.js"></script>
@@ -81,9 +90,6 @@
     <!--? GRAFO -->
     <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
     <script type="module" src="src/grafo.js"></script>
-
-    <!--? GESTIONE COSE MENU -->
-    <script src="src/cose_che_spariscono.js"></script>
 
     <!--? MAPPA -->
     <script src="https://unpkg.com/maplibre-gl/dist/maplibre-gl.js"></script>

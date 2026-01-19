@@ -48,3 +48,28 @@
   margin: 32px;
   display: none;
 }
+
+.contenitore {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  margin-top: 32px;
+}
+
+/* riga con le due immagini sopra */
+.riga_scuola {
+  display: flex;
+  gap: 16px;
+}
+
+/* dimensioni immagini */
+.piccola {
+  width: 240px;   /* puoi cambiarlo */
+  height: auto;
+}
+
+.grande {
+  width: 600px;   /* puoi cambiarlo */
+  height: auto;
+}

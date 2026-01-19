@@ -1,16 +1,16 @@
 {
   "soglia": 5,
 
-  "nodi":
+  "data":
   [
-    { "id": "A", "label": "fiume 1" },
-    { "id": "B", "label": "fiume 2" },
-    { "id": "C", "label": "fiume 3" },
-    { "id": "D", "label": "fiume 4" },
-    { "id": "E", "label": "fiume 5" }
+    { "id": "A", "label": "fiume 1", "lat": 45.890, "lon": 11.040 },
+    { "id": "B", "label": "fiume 2", "lat": 45.900, "lon": 11.050 },
+    { "id": "C", "label": "fiume 3", "lat": 45.910, "lon": 11.060 },
+    { "id": "D", "label": "fiume 4", "lat": 45.920, "lon": 11.070 },
+    { "id": "E", "label": "fiume 5", "lat": 45.930, "lon": 11.080 }
   ],
-  
-  "archi":
+
+  "links":
   [
     { "from": "A", "to": "B" },
     { "from": "B", "to": "C" },

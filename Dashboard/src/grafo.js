@@ -1,42 +1,39 @@
-mermaid.initialize(
+import { onDatiAggiornati } from "./fetch_data.js";
+
+onDatiAggiornati((staticData, dynamicData) =>
 {
-    startOnLoad: false
+    aggiornaGrafo(staticData, dynamicData);
 });
 
-let staticData;
-let dynamicData;
+mermaid.initialize(
+    {
+        startOnLoad: false
+    });
 
-async function caricaDati()
-{
-    const s = await fetch("data/static_data.json");
-    const d = await fetch("data/dynamic_data.json");
-
-    staticData = await s.json();
-    dynamicData = await d.json();
-
-    aggiornaGrafo();
-}
-
-async function aggiornaGrafo()
-{
+async function aggiornaGrafo(staticData, dynamicData) {
     const SOGLIA = staticData.soglia;
 
     let testo = "flowchart TD\n";
-    testo += "classDef ok fill:#7CFF7C,stroke:#2E8B57;\n";
-    testo += "classDef alert fill:#FF7C7C,stroke:#8B0000;\n";
 
-    staticData.nodi.forEach(n =>
-    {
+    staticData.data.forEach(n => {
         const valore = dynamicData.valori[n.id];
         const classe = valore > SOGLIA ? "alert" : "ok";
 
         testo += `${n.id}(${n.label}: ${valore}):::${classe}\n`;
     });
 
-    staticData.archi.forEach(a =>
-    {
+    testo += "\n";
+
+    staticData.links.forEach(a => {
         testo += `${a.from} --> ${a.to}\n`;
     });
+
+    testo += "\n";
+
+    testo += "classDef ok fill:#7CFF7C,stroke:#2E8B57;\n";
+    testo += "classDef alert fill:#FF7C7C,stroke:#8B0000;\n";
+
+    testo += "\n";
 
     const container = document.getElementById("mermaid-container");
 
@@ -56,17 +53,3 @@ async function aggiornaGrafo()
         "xMinYMin meet"
     );
 }
-
-
-
-//! carica TUTTO
-caricaDati();
-
-//! aggiorna periodicamente SOLO i dati dinamici
-setInterval(async () =>
-{
-    const r = await fetch("data/dynamic_data.json");
-    dynamicData = await r.json();
-    aggiornaGrafo();
-}, 2000);
-

@@ -15,7 +15,7 @@ const colori = dati.values.map(v => {
                       : "rgba(80, 255, 80, 0.8)";
 });
 
-const chart = new Chart(ctx,
+window.chart = new Chart(ctx,
     {
         type: "bar",
         data:

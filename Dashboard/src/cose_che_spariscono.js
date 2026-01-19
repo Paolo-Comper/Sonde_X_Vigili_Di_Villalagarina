@@ -11,7 +11,18 @@ document.querySelectorAll("[data-target]").forEach(link =>
         });
 
         //! MOSTRA QUELLO CHE VOLEVI VEDERE
-        document.getElementById(targetId).style.display = "block";
+        const sezione = document.getElementById(targetId);
+        sezione.style.display = "block";
+
+        //se stiamo aprendo la mappa, ricalcola le dimensioni
+        if (targetId === "sezione-mappa" && window.maplibre_map)
+        {
+            setTimeout(() =>
+            {
+                window.maplibre_map.resize();
+            }, 100);
+        }
+
     });
 });
 

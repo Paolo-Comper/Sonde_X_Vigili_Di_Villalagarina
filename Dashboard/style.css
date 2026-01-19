@@ -5,11 +5,9 @@
 }
 
 /*~ GRAFICO */
-
 .grafico {
   width: 100%;
   max-width: 1100px;
-  /* grande ma non enorme */
   aspect-ratio: 16 / 9;
 }
 
@@ -37,6 +35,13 @@
   overflow: hidden;
 }
 
+/*~ GRAFICO */
+
+.mappa {
+  width: 100%;
+  max-width: 1100px;
+  aspect-ratio: 16 / 9;
+}
 
 /*? Cose che scompaiono */
 .sezione {

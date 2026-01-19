@@ -1,0 +1,20 @@
+{
+  "soglia": 5,
+
+  "nodi":
+  [
+    { "id": "A", "label": "fiume 1" },
+    { "id": "B", "label": "fiume 2" },
+    { "id": "C", "label": "fiume 3" },
+    { "id": "D", "label": "fiume 4" },
+    { "id": "E", "label": "fiume 5" }
+  ],
+  
+  "archi":
+  [
+    { "from": "A", "to": "B" },
+    { "from": "B", "to": "C" },
+    { "from": "C", "to": "D" },
+    { "from": "C", "to": "E" }
+  ]
+}

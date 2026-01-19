@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+    <!--& SETTINGS -->
+    <meta charset="utf-8">
+    <title>Dashboard</title>
+
+    <!--& CSS -->
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/uikit@3.16.6/dist/css/uikit.min.css" />
+
+    <!--& FIX PER I TELEFONI -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+</head>
+
+<body>
+
+    <!--~ BARRA LATERALE -->
+    <div id="offcanvas-nav" uk-offcanvas="mode: push">
+        <div class="uk-offcanvas-bar">
+            <ul class="uk-nav uk-nav-default">
+                <li class="uk-active"><a href="#">Menu</a></li>
+                <li><a href="#" data-target="sezione-intro">Intro</a></li>
+                <li><a href="#" data-target="sezione-grafico">Grafico a barre</a></li>
+                <li><a href="#" data-target="sezione-grafo">Grafo</a></li>
+            </ul>
+
+        </div>
+    </div>
+
+    <!--~ PULSANTE MENU -->
+    <button class="pulsante" type="button" uk-toggle="target: #offcanvas-nav">
+        <img src="res/menu.png" alt="menu" height="32" width="32">
+    </button>
+
+    <!--
+    ~   ▄▄▄▄                           ██                            ██
+    ~ ▄█▀▀▀▀█                          ▀▀                            ▀▀
+    ~ ██▄        ▄████▄   ████████   ████      ▄████▄   ██▄████▄   ████
+    ~  ▀████▄   ██▄▄▄▄██      ▄█▀      ██     ██▀  ▀██  ██▀   ██     ██
+    ~      ▀██  ██▀▀▀▀▀▀    ▄█▀        ██     ██    ██  ██    ██     ██
+    ~ █▄▄▄▄▄█▀  ▀██▄▄▄▄█  ▄██▄▄▄▄▄  ▄▄▄██▄▄▄  ▀██▄▄██▀  ██    ██  ▄▄▄██▄▄▄
+    ~  ▀▀▀▀▀      ▀▀▀▀▀   ▀▀▀▀▀▀▀▀  ▀▀▀▀▀▀▀▀    ▀▀▀▀    ▀▀    ▀▀  ▀▀▀▀▀▀▀▀
+    -->
+
+    <!--~ INTRO -->
+    <div id="sezione-intro" class="sezione">
+        <h2>Intro</h2>
+    </div>
+
+    <!--~ GRFICO -->
+    <div id="sezione-grafico" class="sezione">
+        <div class="grafico">
+            <canvas id="barChart"></canvas>
+        </div>
+    </div>
+
+    <!--~ GRAFO -->
+    <div id="sezione-grafo" class="sezione">
+        <h3 style="margin-bottom: 32px;">Grafo fiumi</h3>
+        <div id="mermaid-container" class="mermaid">
+
+        </div>
+    </div>
+
+    <!--? UI -->
+    <script src="https://cdn.jsdelivr.net/npm/uikit@3.16.6/dist/js/uikit.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/uikit@3.16.6/dist/js/uikit-icons.min.js"></script>
+
+    <!--? GRAFICO -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="src/grafico.js"></script>
+
+    <!--? GRAFO -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <script src="src/grafo.js"></script>
+
+    <!--? GESTIONE COSE MENU -->
+    <script src="src/cose_che_spariscono.js"></script>
+
+</body>
+
+</html>

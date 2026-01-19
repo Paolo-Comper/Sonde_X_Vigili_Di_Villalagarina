@@ -1,0 +1,45 @@
+.pulsante {
+  border: 0;
+  background-color: transparent;
+  padding: 16px;
+}
+
+/*~ GRAFICO */
+
+.grafico {
+  width: 100%;
+  max-width: 1100px;
+  /* grande ma non enorme */
+  aspect-ratio: 16 / 9;
+}
+
+.grafico canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/*~ GRAFO */
+#mermaid-container svg {
+  transition: 0.3s;
+  transform-origin: top left;
+  width: 100% !important;
+  height: auto !important;
+  max-width: 100% !important;
+  max-height: 80vh !important;
+}
+
+#mermaid-container {
+  align-items: flex-start;
+  justify-content: flex-start;
+}
+
+#sezione-grafo {
+  overflow: hidden;
+}
+
+
+/*? Cose che scompaiono */
+.sezione {
+  margin: 32px;
+  display: none;
+}

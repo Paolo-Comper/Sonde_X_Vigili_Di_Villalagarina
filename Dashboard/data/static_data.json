@@ -3,9 +3,9 @@
 
   "links":
   [
-    { "from": "fiume 1", "to": "fiume 2" },
-    { "from": "fiume 2", "to": "fiume 3" },
-    { "from": "fiume 3", "to": "fiume 4" },
-    { "from": "fiume 3", "to": "fiume 5" }
+    { "from": "fiume1", "to": "fiume2" },
+    { "from": "fiume2", "to": "fiume3" },
+    { "from": "fiume3", "to": "fiume4" },
+    { "from": "fiume3", "to": "fiume5" }
   ]
 }

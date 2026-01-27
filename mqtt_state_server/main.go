@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"sync"
+	"strings"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 )
@@ -26,7 +27,6 @@ var (
 )
 
 func main() {
-	// --- MQTT ---
 	opts := mqtt.NewClientOptions()
 	opts.AddBroker("tcp://test.mosquitto.org:1883")
 	opts.SetClientID("state_server")
@@ -38,7 +38,6 @@ func main() {
 
 	client.Subscribe("Sonde_X_Vigili_Di_Villalagarina/+/+", 0, on_message)
 
-	// --- HTTP ---
 	http.HandleFunc("/state.json", state_handler)
 	fmt.Println("Server HTTP su http://localhost:8080/state.json")
 	http.ListenAndServe(":8080", nil)
@@ -48,9 +47,13 @@ func on_message(client mqtt.Client, msg mqtt.Message) {
 	topic := msg.Topic()
 	payload := string(msg.Payload())
 
-	// topic: Sonde_X_Vigili_Di_Villalagarina/esp1/value
-	var device, field string
-	fmt.Sscanf(topic, "Sonde_X_Vigili_Di_Villalagarina/%s/%s", &device, &field)
+	parts := strings.Split(topic, "/")
+	if len(parts) != 3 {
+		return
+	}
+
+	device := parts[1]
+	field := parts[2]
 
 	mutex.Lock()
 	defer mutex.Unlock()
@@ -71,11 +74,13 @@ func on_message(client mqtt.Client, msg mqtt.Message) {
 }
 
 func state_handler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Content-Type", "application/json")
+
 	mutex.Lock()
 	defer mutex.Unlock()
 
 	var resp Response
-
 	for _, dev := range state {
 		resp.Data = append(resp.Data, dev)
 	}

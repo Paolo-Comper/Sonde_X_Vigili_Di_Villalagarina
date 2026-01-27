@@ -1,10 +1,10 @@
 {
   "data":
   [
-    { "id": "fiume 1", "value": 2.9, "lat": 45.890, "lon": 11.040 },
-    { "id": "fiume 2", "value": 4.3, "lat": 45.900, "lon": 11.050 },
-    { "id": "fiume 3", "value": 3.3, "lat": 45.910, "lon": 11.060 },
-    { "id": "fiume 4", "value": 4.7, "lat": 45.920, "lon": 11.070 },
-    { "id": "fiume 5", "value": 8.6, "lat": 45.930, "lon": 11.080 }
+    { "id": "fiume1", "value": 2.9, "lat": 45.890, "lon": 11.040 },
+    { "id": "fiume2", "value": 4.3, "lat": 45.900, "lon": 11.050 },
+    { "id": "fiume3", "value": 3.3, "lat": 45.910, "lon": 11.060 },
+    { "id": "fiume4", "value": 4.7, "lat": 45.920, "lon": 11.070 },
+    { "id": "fiume5", "value": 8.6, "lat": 45.930, "lon": 11.080 }
   ]
 }

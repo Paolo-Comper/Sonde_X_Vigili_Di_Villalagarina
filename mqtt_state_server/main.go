@@ -40,8 +40,8 @@ func main() {
 
 	// --- HTTP ---
 	http.HandleFunc("/state.json", state_handler)
-	fmt.Println("Server HTTP su http://localhost:6969/state.json")
-	http.ListenAndServe(":6969", nil)
+	fmt.Println("Server HTTP su http://localhost:8080/state.json")
+	http.ListenAndServe(":8080", nil)
 }
 
 func on_message(client mqtt.Client, msg mqtt.Message) {

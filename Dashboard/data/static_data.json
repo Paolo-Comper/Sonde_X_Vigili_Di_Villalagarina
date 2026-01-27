@@ -1,20 +1,11 @@
 {
   "soglia": 5,
 
-  "data":
-  [
-    { "id": "A", "label": "fiume 1", "lat": 45.890, "lon": 11.040 },
-    { "id": "B", "label": "fiume 2", "lat": 45.900, "lon": 11.050 },
-    { "id": "C", "label": "fiume 3", "lat": 45.910, "lon": 11.060 },
-    { "id": "D", "label": "fiume 4", "lat": 45.920, "lon": 11.070 },
-    { "id": "E", "label": "fiume 5", "lat": 45.930, "lon": 11.080 }
-  ],
-
   "links":
   [
-    { "from": "A", "to": "B" },
-    { "from": "B", "to": "C" },
-    { "from": "C", "to": "D" },
-    { "from": "C", "to": "E" }
+    { "from": "fiume 1", "to": "fiume 2" },
+    { "from": "fiume 2", "to": "fiume 3" },
+    { "from": "fiume 3", "to": "fiume 4" },
+    { "from": "fiume 3", "to": "fiume 5" }
   ]
 }

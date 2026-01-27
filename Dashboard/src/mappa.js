@@ -43,7 +43,7 @@ function inizializzaMappa(map, static_data, dynamic_data) {
         });
 
     //? LINK
-    aggiungiCollegamenti(map, static_data);
+    aggiungiCollegamenti(map, static_data, dynamic_data);
 
     //? LAYER PUNTI OK
     map.addLayer(
@@ -82,17 +82,16 @@ function inizializzaMappa(map, static_data, dynamic_data) {
 function creaFeatureCollectionNodi(static_data, dynamic_data) {
     const SOGLIA = static_data.soglia;
 
-    const features = static_data.data.map(nodo => {
-        const valore = dynamic_data.valori[nodo.id];
-        const stato = valore > SOGLIA ? "alert" : "ok";
+    const features = dynamic_data.data.map(nodo => {
+        const stato = nodo.value > SOGLIA ? "alert" : "ok";
 
         return {
             type: "Feature",
             properties:
             {
                 id: nodo.id,
-                nome: nodo.label,
-                valore: valore,
+                nome: nodo.id,
+                valore: nodo.value,
                 stato: stato
             },
             geometry:
@@ -134,48 +133,49 @@ function mostraPopup(e, map) {
         .addTo(map);
 }
 
-function aggiungiCollegamenti(map, static_data) {
-    const linee = static_data.links.map(a => {
-        const from = static_data.data.find(n => n.id === a.from);
-        const to = static_data.data.find(n => n.id === a.to);
+function aggiungiCollegamenti(map, static_data, dynamic_data) {
+    // Crea un oggetto lookup per trovare rapidamente i nodi per ID
+    const nodiLookup = {};
+    dynamic_data.data.forEach(nodo => {
+        nodiLookup[nodo.id] = nodo;
+    });
 
-        return {
-            type: "Feature",
-            geometry:
-            {
-                type: "LineString",
-                coordinates:
-                    [
+    const linee = static_data.links
+        .filter(a => nodiLookup[a.from] && nodiLookup[a.to])  // Filtra collegamenti validi
+        .map(a => {
+            const from = nodiLookup[a.from];
+            const to = nodiLookup[a.to];
+
+            return {
+                type: "Feature",
+                geometry: {
+                    type: "LineString",
+                    coordinates: [
                         [from.lon, from.lat],
                         [to.lon, to.lat]
                     ]
-            }
-        };
+                }
+            };
+        });
+
+    map.addSource("archi", {
+        type: "geojson",
+        data: {
+            type: "FeatureCollection",
+            features: linee
+        }
     });
 
-    map.addSource("archi",
-        {
-            type: "geojson",
-            data:
-            {
-                type: "FeatureCollection",
-                features: linee
-            }
-        });
-
-    map.addLayer(
-        {
-            id: "archi-layer",
-            type: "line",
-            source: "archi",
-            paint:
-            {
-                "line-width": 1.5,
-                "line-color": "#666666",
-                "line-opacity": 0.45
-            }
-
-        });
+    map.addLayer({
+        id: "archi-layer",
+        type: "line",
+        source: "archi",
+        paint: {
+            "line-width": 1.5,
+            "line-color": "#666666",
+            "line-opacity": 0.45
+        }
+    });
 }
 
 // AVVIO

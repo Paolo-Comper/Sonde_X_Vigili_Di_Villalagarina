@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"sync"
 	"strings"
+	"sort"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 )
@@ -84,6 +85,10 @@ func state_handler(w http.ResponseWriter, r *http.Request) {
 	for _, dev := range state {
 		resp.Data = append(resp.Data, dev)
 	}
+
+	sort.Slice(resp.Data, func(i, j int) bool {
+		return resp.Data[i].ID < resp.Data[j].ID
+	})
 
 	json.NewEncoder(w).Encode(resp)
 }

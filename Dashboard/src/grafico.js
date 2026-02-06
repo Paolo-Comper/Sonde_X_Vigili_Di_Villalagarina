@@ -29,7 +29,11 @@ window.chart = new Chart(ctx, {
         },
         scales: {
             y: {
-                beginAtZero: true
+                beginAtZero: true,  // Parte da 0
+                max: 10,            // Massimo fisso a 10
+                ticks: {
+                    stepSize: 1       // Opzionale: passo di 1
+                }
             }
         }
     }
@@ -37,8 +41,8 @@ window.chart = new Chart(ctx, {
 
 function aggiornaGrafo(staticData, dynamicData) {
 
-    const valori_array  = dynamicData.data.map(nodo => nodo.value);
-    const labels        = dynamicData.data.map(nodo => nodo.id);
+    const valori_array = dynamicData.data.map(nodo => nodo.value);
+    const labels = dynamicData.data.map(nodo => nodo.id);
 
     // Applica al grafico
     chart.data.datasets[0].data = valori_array;

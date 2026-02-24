@@ -57,7 +57,7 @@ void send_sensor()
     int written = snprintf(
         buffer,
         sizeof(buffer),
-        R"({ "id": "fiume1", "value": %.4f, "lat": 45.890, "lon": 11.040 })",
+        R"({ "value": %.4f, "lat": 45.890, "lon": 11.040 })",
         water_level
     );
 
@@ -97,3 +97,4 @@ void loop()
 
     delay(5000);
 }
+

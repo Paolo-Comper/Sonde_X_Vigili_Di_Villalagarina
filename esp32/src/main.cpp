@@ -9,6 +9,8 @@ static const char* mqtt_server = "test.mosquitto.org";
 static const int   mqtt_port   = 1883;
 
 static const char* mqtt_topic  = "Sonde_X_Vigili_Di_Villalagarina/fiume1";
+static const char* client_id = "esp32_1";
+static const char* label = "Adige";
 
 WiFiClient wifi_client;
 PubSubClient mqtt_client(wifi_client);
@@ -37,7 +39,7 @@ void mqtt_reconnect()
     {
         Serial.print("Attempting MQTT connection...");
 
-        if (mqtt_client.connect("esp32_fiume1"))
+        if (mqtt_client.connect(client_id))
         {
             Serial.println("connected");
         }
@@ -57,13 +59,13 @@ void send_sensor()
     int written = snprintf(
         buffer,
         sizeof(buffer),
-        R"({ "value": %.4f, "lat": 45.890, "lon": 11.040 })",
-        water_level
+        R"({ "client-id": "%s", "label": "%s", "lat": 45.890, "lon": 11.040, "value": %.4f })",
+        client_id, label, water_level
     );
 
     if (written > 0 && written < (int)sizeof(buffer))
     {
-    mqtt_client.publish(mqtt_topic, buffer, written);
+        mqtt_client.publish(mqtt_topic, buffer, written);
     }
     else
     {
@@ -93,6 +95,7 @@ void loop()
 
     mqtt_client.loop();
 
+    water_level = random(0, 10);
     send_sensor();
 
     delay(5000);

@@ -67,3 +67,4 @@ async function aggiornaGrafo(staticData, dynamicData) {
         container.innerHTML = `<div class="error">Errore nel diagramma: ${error.message}</div>`;
     }
 }
+

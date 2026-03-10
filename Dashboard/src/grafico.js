@@ -56,3 +56,4 @@ function aggiornaGrafo(staticData, dynamicData) {
 
     chart.update();
 }
+

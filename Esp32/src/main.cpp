@@ -5,7 +5,7 @@
 static const char* wifi_ssid  = "Paolo";
 static const char* wifi_pass  = "12345678";
 
-static const char* mqtt_server = "test.mosquitto.org";
+static const char* mqtt_server = "broker.hivemq.com";
 static const int   mqtt_port   = 1883;
 
 static const char* mqtt_topic  = "Sonde_X_Vigili_Di_Villalagarina/fiume1";
@@ -53,7 +53,7 @@ void mqtt_reconnect()
 }
 
 void send_sensor()
-
+{
     char buffer[256];
 
     int written = snprintf(

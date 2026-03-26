@@ -4,17 +4,17 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"sync"
-	"strings"
 	"sort"
+	"strings"
+	"sync"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 )
 
 type DeviceState struct {
-	ID        string  `json:"id"`       // client-id
-	Topic     string  `json:"topic"`    // fiume1
-	Label     string  `json:"label"`    // Adige
+	ID        string  `json:"id"`    // client-id
+	Topic     string  `json:"topic"` // fiume1
+	Label     string  `json:"label"` // Adige
 	Value     float64 `json:"value"`
 	Latitude  float64 `json:"lat"`
 	Longitude float64 `json:"lon"`
@@ -39,7 +39,7 @@ var (
 
 func main() {
 	opts := mqtt.NewClientOptions()
-	opts.AddBroker("tcp://test.mosquitto.org:1883")
+	opts.AddBroker("tcp://broker.hivemq.com:1883")
 	opts.SetClientID("state_server")
 
 	client := mqtt.NewClient(opts)
@@ -102,4 +102,3 @@ func state_handler(w http.ResponseWriter, r *http.Request) {
 
 	json.NewEncoder(w).Encode(resp)
 }
-

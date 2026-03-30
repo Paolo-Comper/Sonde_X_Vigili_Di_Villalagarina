@@ -39,19 +39,26 @@ window.chart = new Chart(ctx, {
     }
 });
 
+function formattaLabel(label) {
+    return label.replace(/[_-]+/g, ' ');
+}
+
 function aggiornaGrafo(staticData, dynamicData) {
-
     const valori_array = dynamicData.data.map(nodo => nodo.value);
-    const labels = dynamicData.data.map(nodo => nodo.id);
 
-    // Applica al grafico
+    const labels = dynamicData.data.map(nodo =>
+        formattaLabel(nodo.label)
+    );
+
     chart.data.datasets[0].data = valori_array;
     chart.data.labels = labels;
 
-    // Colori basati sulla soglia da staticData
     const soglia = staticData.soglia;
+
     chart.data.datasets[0].backgroundColor = valori_array.map(v =>
-        v > soglia ? "rgba(255, 80, 80, 0.8)" : "rgba(80, 255, 80, 0.8)"
+        v > soglia
+            ? "rgba(255, 80, 80, 0.8)"
+            : "rgba(80, 255, 80, 0.8)"
     );
 
     chart.update();

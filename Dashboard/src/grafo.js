@@ -8,9 +8,13 @@ mermaid.initialize({
     startOnLoad: false
 });
 
-// Funzione per creare ID validi per Mermaid (senza spazi)
+// Funzione per creare ID validi per Mermaid
 function creaIdMermaid(idOriginale) {
     return idOriginale.replace(/\s+/g, '_');
+}
+
+function formattaLabel(label) {
+    return label.replace(/[_-]+/g, ' ');
 }
 
 async function aggiornaGrafo(staticData, dynamicData) {
@@ -18,22 +22,24 @@ async function aggiornaGrafo(staticData, dynamicData) {
 
     let testo = "flowchart TD\n";
 
-    // Prima passata: creiamo tutti i nodi con ID validi per Mermaid
+    // NODI
     dynamicData.data.forEach(nodo => {
-        const idMermaid = creaIdMermaid(nodo.id);
+        const idMermaid = creaIdMermaid(nodo.topic);
         const valore = nodo.value;
         const classe = valore > SOGLIA ? "alert" : "ok";
 
-        // Mostriamo l'ID originale come label, ma usiamo l'ID senza spazi per Mermaid
-        testo += `${idMermaid}(${nodo.id}: ${valore}):::${classe}\n`;
+        const labelPulita = formattaLabel(nodo.label);
+
+        testo += `${idMermaid}(${labelPulita}: ${valore}):::${classe}\n`;
     });
 
     testo += "\n";
 
-    // Seconda passata: creiamo i collegamenti usando ID Mermaid
+    // LINK
     staticData.links.forEach(a => {
         const fromMermaid = creaIdMermaid(a.from);
         const toMermaid = creaIdMermaid(a.to);
+
         testo += `${fromMermaid} --> ${toMermaid}\n`;
     });
 
@@ -45,22 +51,13 @@ async function aggiornaGrafo(staticData, dynamicData) {
     const container = document.getElementById("mermaid-container");
 
     try {
-        // Render off-screen per evitare flicker
-        const { svg } = await mermaid.render(
-            "mermaid-live",
-            testo
-        );
+        const { svg } = await mermaid.render("mermaid-live", testo);
 
-        // Sostituisce SOLO l'SVG
         container.innerHTML = svg;
 
-        // Mantiene il tuo comportamento di scala/viewport
         const nuovoSvg = container.querySelector("svg");
         if (nuovoSvg) {
-            nuovoSvg.setAttribute(
-                "preserveAspectRatio",
-                "xMinYMin meet"
-            );
+            nuovoSvg.setAttribute("preserveAspectRatio", "xMinYMin meet");
         }
     } catch (error) {
         console.error("Errore nel rendering Mermaid:", error);

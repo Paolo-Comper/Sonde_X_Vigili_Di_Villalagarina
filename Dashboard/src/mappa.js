@@ -5,6 +5,10 @@ let last_dynamic_map = null;
 
 import { onDatiAggiornati } from "./fetch_data.js";
 
+function formattaLabel(label) {
+    return label.replace(/[_-]+/g, ' ');
+}
+
 onDatiAggiornati((staticData, dynamicData) => {
     last_static_map = staticData;
     last_dynamic_map = dynamicData;
@@ -89,8 +93,8 @@ function creaFeatureCollectionNodi(static_data, dynamic_data) {
             type: "Feature",
             properties:
             {
-                id: nodo.id,
-                nome: nodo.id,
+                id: nodo.topic,
+                nome: formattaLabel(nodo.label),
                 valore: nodo.value,
                 stato: stato
             },
@@ -127,56 +131,63 @@ function mostraPopup(e, map) {
         .setLngLat(e.lngLat)
         .setHTML(`
             <strong>${p.nome}</strong><br>
-            ID: ${p.id}<br>
+            Nodo: ${p.id}<br>
             Valore: ${p.valore}
         `)
         .addTo(map);
 }
 
 function aggiungiCollegamenti(map, static_data, dynamic_data) {
-    // Crea un oggetto lookup per trovare rapidamente i nodi per ID
     const nodiLookup = {};
+
     dynamic_data.data.forEach(nodo => {
-        nodiLookup[nodo.id] = nodo;
+        nodiLookup[nodo.topic] = nodo;
     });
 
     const linee = static_data.links
-        .filter(a => nodiLookup[a.from] && nodiLookup[a.to])  // Filtra collegamenti validi
+        .filter(a => nodiLookup[a.from] && nodiLookup[a.to])
         .map(a => {
             const from = nodiLookup[a.from];
             const to = nodiLookup[a.to];
 
             return {
                 type: "Feature",
-                geometry: {
+                geometry:
+                {
                     type: "LineString",
-                    coordinates: [
-                        [from.lon, from.lat],
-                        [to.lon, to.lat]
-                    ]
+                    coordinates:
+                        [
+                            [from.lon, from.lat],
+                            [to.lon, to.lat]
+                        ]
                 }
             };
         });
 
-    map.addSource("archi", {
-        type: "geojson",
-        data: {
-            type: "FeatureCollection",
-            features: linee
-        }
-    });
+    map.addSource("archi",
+        {
+            type: "geojson",
+            data:
+            {
+                type: "FeatureCollection",
+                features: linee
+            }
+        });
 
-    map.addLayer({
-        id: "archi-layer",
-        type: "line",
-        source: "archi",
-        paint: {
-            "line-width": 1.5,
-            "line-color": "#666666",
-            "line-opacity": 0.45
-        }
-    });
+    map.addLayer(
+        {
+            id: "archi-layer",
+            type: "line",
+            source: "archi",
+            paint:
+            {
+                "line-width": 1.5,
+                "line-color": "#666666",
+                "line-opacity": 0.45
+            }
+        });
 }
 
 // AVVIO
 caricaMappa();
+

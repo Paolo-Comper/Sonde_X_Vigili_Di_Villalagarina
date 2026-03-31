@@ -1,5 +1,0 @@
-CompileFlags:
-  Add: 
-    - -DARDUINO
-    - -DARDUINO_ARCH_ESP32
-    - -DESP32

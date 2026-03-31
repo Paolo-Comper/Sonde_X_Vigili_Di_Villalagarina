@@ -19,9 +19,7 @@ while true; do
                   -t "$BASE_TOPIC/fiume$i" \
                   -m "$payload"
 
-    sleep 0.1
+    sleep 1
   done
-
-  sleep 5
 done
 

@@ -85,7 +85,7 @@ function inizializzaMappa(map, static_data, dynamic_data) {
 
 function creaFeatureCollectionNodi(static_data, dynamic_data) {
     const features = dynamic_data.data.map(nodo => {
-        const soglia = static_data.soglia[nodo.topic] ?? Infinity;
+        const soglia = static_data.soglia[nodo.topic] ?? 5;
         const stato = nodo.value > soglia ? "alert" : "ok";
 
         return {

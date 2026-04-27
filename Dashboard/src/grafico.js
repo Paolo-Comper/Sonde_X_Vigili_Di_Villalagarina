@@ -54,7 +54,7 @@ function aggiornaGrafo(staticData, dynamicData) {
     chart.data.labels = labels;
 
     chart.data.datasets[0].backgroundColor = dynamicData.data.map(nodo => {
-        const soglia = staticData.soglia[nodo.topic] ?? Infinity;
+        const soglia = staticData.soglia[nodo.topic] ?? 5;
 
         return nodo.value > soglia
             ? "rgba(255, 80, 80, 0.8)"

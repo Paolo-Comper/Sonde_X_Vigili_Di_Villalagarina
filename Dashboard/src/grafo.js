@@ -24,7 +24,7 @@ async function aggiornaGrafo(staticData, dynamicData) {
     dynamicData.data.forEach(nodo => {
         const idMermaid = creaIdMermaid(nodo.topic);
         const valore = nodo.value;
-        const soglia = staticData.soglia[nodo.topic] ?? Infinity;
+        const soglia = staticData.soglia[nodo.topic] ?? 5;
         const classe = valore > soglia ? "alert" : "ok";
 
         const labelPulita = formattaLabel(nodo.label);

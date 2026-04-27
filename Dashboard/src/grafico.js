@@ -53,13 +53,13 @@ function aggiornaGrafo(staticData, dynamicData) {
     chart.data.datasets[0].data = valori_array;
     chart.data.labels = labels;
 
-    const soglia = staticData.soglia;
+    chart.data.datasets[0].backgroundColor = dynamicData.data.map(nodo => {
+        const soglia = staticData.soglia[nodo.topic] ?? Infinity;
 
-    chart.data.datasets[0].backgroundColor = valori_array.map(v =>
-        v > soglia
+        return nodo.value > soglia
             ? "rgba(255, 80, 80, 0.8)"
-            : "rgba(80, 255, 80, 0.8)"
-    );
+            : "rgba(80, 255, 80, 0.8)";
+    });
 
     chart.update();
 }

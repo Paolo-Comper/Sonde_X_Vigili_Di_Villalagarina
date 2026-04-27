@@ -1,5 +1,11 @@
 {
-  "soglia": 5,
+  "soglia":
+  {
+    "fiume1": 5.9,
+    "fiume2": 6.54,
+    "fiume3": 4.3,
+    "fiume4": 5.13
+  },
 
   "links":
   [
@@ -9,3 +15,4 @@
     { "from": "fiume3", "to": "fiume5" }
   ]
 }
+

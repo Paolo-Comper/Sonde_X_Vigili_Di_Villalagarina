@@ -18,15 +18,14 @@ function formattaLabel(label) {
 }
 
 async function aggiornaGrafo(staticData, dynamicData) {
-    const SOGLIA = staticData.soglia;
-
     let testo = "flowchart TD\n";
 
     // NODI
     dynamicData.data.forEach(nodo => {
         const idMermaid = creaIdMermaid(nodo.topic);
         const valore = nodo.value;
-        const classe = valore > SOGLIA ? "alert" : "ok";
+        const soglia = staticData.soglia[nodo.topic] ?? Infinity;
+        const classe = valore > soglia ? "alert" : "ok";
 
         const labelPulita = formattaLabel(nodo.label);
 

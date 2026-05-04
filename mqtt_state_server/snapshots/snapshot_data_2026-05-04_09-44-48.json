@@ -1,0 +1,44 @@
+{
+  "data": [
+    {
+      "id": "esp32_1",
+      "topic": "fiume1",
+      "label": "Adige_1",
+      "value": 8,
+      "lat": 45.891,
+      "lon": 11.041
+    },
+    {
+      "id": "esp32_3",
+      "topic": "fiume3",
+      "label": "Adige_3",
+      "value": 10,
+      "lat": 45.893,
+      "lon": 11.043
+    },
+    {
+      "id": "esp32_4",
+      "topic": "fiume4",
+      "label": "Adige_4",
+      "value": 5,
+      "lat": 45.894,
+      "lon": 11.044
+    },
+    {
+      "id": "esp32_5",
+      "topic": "fiume5",
+      "label": "Adige_5",
+      "value": 9,
+      "lat": 45.895,
+      "lon": 11.045
+    },
+    {
+      "id": "esp32_2",
+      "topic": "fiume2",
+      "label": "Adige_2",
+      "value": 6,
+      "lat": 45.892,
+      "lon": 11.042
+    }
+  ]
+}

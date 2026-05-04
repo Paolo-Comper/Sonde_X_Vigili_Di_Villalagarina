@@ -4,9 +4,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
+	"path/filepath"
 	"sort"
 	"strings"
 	"sync"
+	"time"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 )
@@ -51,7 +54,11 @@ func main() {
 
 	http.HandleFunc("/state.json", state_handler)
 	fmt.Println("Server HTTP su http://localhost:8080/state.json")
+
+	go snapshot_loop()
+
 	http.ListenAndServe(":8080", nil)
+
 }
 
 func on_message(client mqtt.Client, msg mqtt.Message) {
@@ -101,4 +108,53 @@ func state_handler(w http.ResponseWriter, r *http.Request) {
 	})
 
 	json.NewEncoder(w).Encode(resp)
+}
+
+func snapshot_loop() {
+	ticker := time.NewTicker(5 * time.Minute)
+
+	defer ticker.Stop()
+
+	for range ticker.C {
+		save_snapshot()
+	}
+}
+
+func save_snapshot() {
+	mutex.Lock()
+
+	var resp Response
+	for _, dev := range state {
+		resp.Data = append(resp.Data, dev)
+	}
+
+	mutex.Unlock()
+
+	// nome file con timestamp
+	timestamp := time.Now().Format("2006-01-02_15-04-05")
+	filename := fmt.Sprintf("snapshot_data_%s.json", timestamp)
+
+	// cartella (creata se non esiste)
+	dir := "snapshots"
+	os.MkdirAll(dir, os.ModePerm)
+
+	full_path := filepath.Join(dir, filename)
+
+	file, err := os.Create(full_path)
+	if err != nil {
+		fmt.Println("Errore creazione file:", err)
+		return
+	}
+	defer file.Close()
+
+	encoder := json.NewEncoder(file)
+	encoder.SetIndent("", "  ")
+
+	err = encoder.Encode(resp)
+	if err != nil {
+		fmt.Println("Errore scrittura JSON:", err)
+		return
+	}
+
+	fmt.Println("Snapshot salvato:", full_path)
 }

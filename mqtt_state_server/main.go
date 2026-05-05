@@ -1,23 +1,22 @@
 package main
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
+	mqtt "github.com/eclipse/paho.mqtt.golang"
+	_ "github.com/glebarez/go-sqlite"
 	"net/http"
-	"os"
-	"path/filepath"
 	"sort"
 	"strings"
 	"sync"
 	"time"
-
-	mqtt "github.com/eclipse/paho.mqtt.golang"
 )
 
 type DeviceState struct {
-	ID        string  `json:"id"`    // client-id
-	Topic     string  `json:"topic"` // fiume1
-	Label     string  `json:"label"` // Adige
+	ID        string  `json:"id"`
+	Topic     string  `json:"topic"`
+	Label     string  `json:"label"`
 	Value     float64 `json:"value"`
 	Latitude  float64 `json:"lat"`
 	Longitude float64 `json:"lon"`
@@ -35,53 +34,82 @@ type Incoming struct {
 	Value    float64 `json:"value"`
 }
 
+type Config struct {
+	mqttBroker string
+	clientID   string
+	topic      string
+
+	httpPort string
+
+	snapshotInterval time.Duration
+	snapshotDir      string
+	databasePath     string
+}
+
 var (
+	cfg = Config{
+		mqttBroker:       "tcp://broker.hivemq.com:1883",
+		clientID:         "state_server",
+		topic:            "Sonde_X_Vigili_Di_Villalagarina/+",
+		httpPort:         ":8080",
+		snapshotInterval: 5 * time.Second,
+		snapshotDir:      "snapshots",
+		databasePath:     "./database.db",
+	}
+
 	state = make(map[string]DeviceState)
-	mutex sync.Mutex
+	mutex sync.RWMutex
+
+	db *sql.DB
 )
 
 func main() {
-	opts := mqtt.NewClientOptions()
-	opts.AddBroker("tcp://broker.hivemq.com:1883")
-	opts.SetClientID("state_server")
+	init_db()
+	defer db.Close()
+
+	go snapshot_loop()
+	go start_http_server()
+
+	start_mqtt()
+
+	select {} // blocca per sempre
+}
+
+func start_mqtt() {
+	opts := mqtt.NewClientOptions().
+		AddBroker(cfg.mqttBroker).
+		SetClientID(cfg.clientID).
+		SetAutoReconnect(true)
 
 	client := mqtt.NewClient(opts)
+
 	if token := client.Connect(); token.Wait() && token.Error() != nil {
 		panic(token.Error())
 	}
 
-	client.Subscribe("Sonde_X_Vigili_Di_Villalagarina/+", 0, on_message)
+	client.Subscribe(cfg.topic, 0, on_message)
+}
 
+func start_http_server() {
 	http.HandleFunc("/state.json", state_handler)
-	fmt.Println("Server HTTP su http://localhost:8080/state.json")
 
-	go snapshot_loop()
-
-	http.ListenAndServe(":8080", nil)
-
+	fmt.Println("HTTP server on http://localhost" + cfg.httpPort + "/state.json")
+	http.ListenAndServe(cfg.httpPort, nil)
 }
 
 func on_message(client mqtt.Client, msg mqtt.Message) {
-	topic := msg.Topic()
-
-	parts := strings.Split(topic, "/")
-	if len(parts) < 2 {
+	device_topic := parse_topic(msg.Topic())
+	if device_topic == "" {
 		return
 	}
-
-	device_topic := parts[1]
 
 	var incoming Incoming
-	err := json.Unmarshal(msg.Payload(), &incoming)
-	if err != nil {
-		fmt.Println("Errore parsing JSON:", err)
+	if err := json.Unmarshal(msg.Payload(), &incoming); err != nil {
+		fmt.Println("JSON parse error:", err)
 		return
 	}
 
-	mutex.Lock()
-	defer mutex.Unlock()
-
-	state[device_topic] = DeviceState{
+	dev := DeviceState{
 		ID:        incoming.ClientID,
 		Topic:     device_topic,
 		Label:     incoming.Label,
@@ -89,19 +117,57 @@ func on_message(client mqtt.Client, msg mqtt.Message) {
 		Latitude:  incoming.Lat,
 		Longitude: incoming.Lon,
 	}
+
+	update_state(device_topic, dev)
+	insert_measurement(dev)
+}
+
+func parse_topic(topic string) string {
+	parts := strings.Split(topic, "/")
+	if len(parts) < 2 {
+		return ""
+	}
+	return parts[1]
+}
+
+func update_state(key string, dev DeviceState) {
+	mutex.Lock()
+	state[key] = dev
+	mutex.Unlock()
+}
+
+func snapshot_loop() {
+	ticker := time.NewTicker(cfg.snapshotInterval)
+	defer ticker.Stop()
+
+	for range ticker.C {
+		mutex.RLock()
+
+		for _, dev := range state {
+			if err := insert_measurement(dev); err != nil {
+				fmt.Println("snapshot insert error:", err)
+			}
+		}
+
+		mutex.RUnlock()
+	}
 }
 
 func state_handler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Content-Type", "application/json")
 
-	mutex.Lock()
-	defer mutex.Unlock()
+	mutex.RLock()
 
-	var resp Response
+	resp := Response{
+		Data: make([]DeviceState, 0, len(state)),
+	}
+
 	for _, dev := range state {
 		resp.Data = append(resp.Data, dev)
 	}
+
+	mutex.RUnlock()
 
 	sort.Slice(resp.Data, func(i, j int) bool {
 		return resp.Data[i].ID < resp.Data[j].ID
@@ -110,51 +176,52 @@ func state_handler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(resp)
 }
 
-func snapshot_loop() {
-	ticker := time.NewTicker(5 * time.Minute)
+func init_db() {
+	var err error
 
-	defer ticker.Stop()
-
-	for range ticker.C {
-		save_snapshot()
+	db, err = sql.Open("sqlite", cfg.databasePath)
+	if err != nil {
+		panic(err)
 	}
+
+	if _, err := create_table(); err != nil {
+		panic(err)
+	}
+
+	fmt.Println("SQLite connected")
 }
 
-func save_snapshot() {
-	mutex.Lock()
+func create_table() (sql.Result, error) {
+	query := `
+	CREATE TABLE IF NOT EXISTS measurements (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		device_id TEXT NOT NULL,
+		topic TEXT NOT NULL,
+		label TEXT NOT NULL,
+		value REAL NOT NULL,
+		lat REAL NOT NULL,
+		lon REAL NOT NULL,
+		timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+	);`
 
-	var resp Response
-	for _, dev := range state {
-		resp.Data = append(resp.Data, dev)
-	}
+	return db.Exec(query)
+}
 
-	mutex.Unlock()
+func insert_measurement(dev DeviceState) error {
+	query := `
+	INSERT INTO measurements (
+		device_id, topic, label, value, lat, lon
+	) VALUES (?, ?, ?, ?, ?, ?);`
 
-	// nome file con timestamp
-	timestamp := time.Now().Format("2006-01-02_15-04-05")
-	filename := fmt.Sprintf("snapshot_data_%s.json", timestamp)
+	_, err := db.Exec(
+		query,
+		dev.ID,
+		dev.Topic,
+		dev.Label,
+		dev.Value,
+		dev.Latitude,
+		dev.Longitude,
+	)
 
-	// cartella (creata se non esiste)
-	dir := "snapshots"
-	os.MkdirAll(dir, os.ModePerm)
-
-	full_path := filepath.Join(dir, filename)
-
-	file, err := os.Create(full_path)
-	if err != nil {
-		fmt.Println("Errore creazione file:", err)
-		return
-	}
-	defer file.Close()
-
-	encoder := json.NewEncoder(file)
-	encoder.SetIndent("", "  ")
-
-	err = encoder.Encode(resp)
-	if err != nil {
-		fmt.Println("Errore scrittura JSON:", err)
-		return
-	}
-
-	fmt.Println("Snapshot salvato:", full_path)
+	return err
 }

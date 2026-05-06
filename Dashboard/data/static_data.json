@@ -9,10 +9,10 @@
 
   "links":
   [
-    { "from": "fiume1", "to": "fiume2" },
+    { "from": "fiume1", "to": "fiume3" },
     { "from": "fiume2", "to": "fiume3" },
-    { "from": "fiume3", "to": "fiume4" },
-    { "from": "fiume3", "to": "fiume5" }
+    { "from": "fiume3", "to": "fiume5" },
+    { "from": "fiume4", "to": "fiume5" }
   ]
 }
 

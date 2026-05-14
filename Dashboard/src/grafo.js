@@ -29,7 +29,7 @@ async function aggiornaGrafo(staticData, dynamicData) {
 
         const labelPulita = formattaLabel(nodo.label);
 
-        testo += `${idMermaid}(${labelPulita}: ${valore}):::${classe}\n`;
+        testo += `${idMermaid}(${labelPulita}:\n${valore}):::${classe}\n`;
     });
 
     testo += "\n";

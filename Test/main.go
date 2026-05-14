@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"math"
 	"math/rand"
 	"time"
 
@@ -85,7 +86,7 @@ func main() {
 				Label:    sonda.Label,
 				Lat:      sonda.Lat,
 				Lon:      sonda.Lon,
-				Value:    rng.Float64() * 10,
+				Value:    math.Round(rng.Float64()*10*1000) / 1000,
 			}
 
 			data, err := json.Marshal(payload)

@@ -170,7 +170,8 @@ func state_handler(w http.ResponseWriter, r *http.Request) {
 	mutex.RUnlock()
 
 	sort.Slice(resp.Data, func(i, j int) bool {
-		return resp.Data[i].ID < resp.Data[j].ID
+		return strings.ToLower(resp.Data[i].Label) <
+			strings.ToLower(resp.Data[j].Label)
 	})
 
 	json.NewEncoder(w).Encode(resp)

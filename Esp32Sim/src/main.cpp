@@ -54,9 +54,9 @@ static const char* SIM_PIN    = "1024";    // ← aggiunto (usa "" se SIM senza 
 
 static const char* MQTT_SERVER = "broker.hivemq.com";
 static const int   MQTT_PORT   = 1883;
-static const char* MQTT_TOPIC  = "ID_1_Vigili_VillaLagarina_TN/Fiume_Adige_0";
+static const char* MQTT_TOPIC  = "421342415/Rio_Molini_0";
 static const char* CLIENT_ID   = "id_TN_VL_0";
-static const char* LABEL       = "Adige0";
+static const char* LABEL       = "Rio Molini 0";
 
 static const uint32_t SLEEP_SEC   = 300;   // 5 minuti
 static const uint32_t GPS_EVERY_N = 288;   // ogni 24 h

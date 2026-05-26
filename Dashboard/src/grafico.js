@@ -30,7 +30,6 @@ window.chart = new Chart(ctx, {
         scales: {
             y: {
                 beginAtZero: true,  // Parte da 0
-                max: 10,            // Massimo fisso a 10
                 ticks: {
                     stepSize: 1       // Opzionale: passo di 1
                 }

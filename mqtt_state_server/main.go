@@ -16,24 +16,35 @@ import (
 )
 
 type DeviceState struct {
-	ID        string  `json:"id"`
-	Topic     string  `json:"topic"`
-	Label     string  `json:"label"`
-	Value     float64 `json:"value"`
+	ID    string `json:"id"`
+	Topic string `json:"topic"`
+	Label string `json:"label"`
+
+	Value float64 `json:"value"`
+
+	UltrasonicCM float64 `json:"ultrasonic_cm"`
+	TofCM        float64 `json:"tof_cm"`
+
 	Latitude  float64 `json:"lat"`
 	Longitude float64 `json:"lon"`
 }
 
-type Response struct {
-	Data []DeviceState `json:"data"`
+type Incoming struct {
+	ClientID string `json:"client-id"`
+	Label    string `json:"label"`
+
+	Lat float64 `json:"lat"`
+	Lon float64 `json:"lon"`
+
+	UltrasonicCM float64 `json:"ultrasonic_cm"`
+	TofCM        float64 `json:"tof_cm"`
+
+	RSSI int    `json:"rssi"`
+	Net  string `json:"net"`
 }
 
-type Incoming struct {
-	ClientID string  `json:"client-id"`
-	Label    string  `json:"label"`
-	Lat      float64 `json:"lat"`
-	Lon      float64 `json:"lon"`
-	Value    float64 `json:"value"`
+type Response struct {
+	Data []DeviceState `json:"data"`
 }
 
 type Config struct {
@@ -53,7 +64,7 @@ type Config struct {
 var cfg = Config{
 	mqttBroker: "tcp://broker.hivemq.com:1883",
 	clientID:   "state_server",
-	topic:      "Sonde_X_Vigili_Di_Villalagarina/+",
+	topic:      "421342415/+",
 	httpPort:   ":8080",
 
 	dbPath: "./database.db",
@@ -102,21 +113,28 @@ func mqtt_loop() {
 
 func on_message(client mqtt.Client, msg mqtt.Message) {
 	device_topic := parse_topic(msg.Topic())
+
 	if device_topic == "" {
 		return
 	}
 
 	var incoming Incoming
+
 	if err := json.Unmarshal(msg.Payload(), &incoming); err != nil {
 		fmt.Println("JSON error:", err)
 		return
 	}
 
 	dev := DeviceState{
-		ID:        incoming.ClientID,
-		Topic:     device_topic,
-		Label:     incoming.Label,
-		Value:     incoming.Value,
+		ID:    incoming.ClientID,
+		Topic: device_topic,
+		Label: incoming.Label,
+
+		Value: incoming.UltrasonicCM,
+
+		UltrasonicCM: incoming.UltrasonicCM,
+		TofCM:        incoming.TofCM,
+
 		Latitude:  incoming.Lat,
 		Longitude: incoming.Lon,
 	}
@@ -189,14 +207,32 @@ func db_loop() {
 func insert_measurement(dev DeviceState) error {
 	query := `
 	INSERT INTO measurements (
-		device_id, topic, label, value, lat, lon
-	) VALUES (?, ?, ?, ?, ?, ?);`
+		device_id,
+		topic,
+		label,
 
-	_, err := db.Exec(query,
+		value,
+
+		ultrasonic_cm,
+		tof_cm,
+
+		lat,
+		lon
+
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?);`
+
+	_, err := db.Exec(
+		query,
+
 		dev.ID,
 		dev.Topic,
 		dev.Label,
+
 		dev.Value,
+
+		dev.UltrasonicCM,
+		dev.TofCM,
+
 		dev.Latitude,
 		dev.Longitude,
 	)
@@ -259,16 +295,23 @@ func init_db() {
 	}
 
 	query := `
-	CREATE TABLE IF NOT EXISTS measurements (
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		device_id TEXT NOT NULL,
-		topic TEXT NOT NULL,
-		label TEXT NOT NULL,
-		value REAL NOT NULL,
-		lat REAL NOT NULL,
-		lon REAL NOT NULL,
-		timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
-	);`
+		CREATE TABLE IF NOT EXISTS measurements (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+			device_id TEXT NOT NULL,
+			topic TEXT NOT NULL,
+			label TEXT NOT NULL,
+
+			value REAL NOT NULL,
+
+			ultrasonic_cm REAL NOT NULL,
+			tof_cm REAL NOT NULL,
+
+			lat REAL NOT NULL,
+			lon REAL NOT NULL,
+
+			timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+		);`
 
 	if _, err := db.Exec(query); err != nil {
 		panic(err)

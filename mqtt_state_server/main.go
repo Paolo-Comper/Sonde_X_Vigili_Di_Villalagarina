@@ -64,7 +64,7 @@ type Config struct {
 var cfg = Config{
 	mqttBroker: "tcp://broker.hivemq.com:1883",
 	clientID:   "state_server",
-	topic:      "421342415/+",
+	topic:      "421342415/ID_1_Vigili_VillaLagarina_TN/+",
 	httpPort:   ":8080",
 
 	dbPath: "./database.db",

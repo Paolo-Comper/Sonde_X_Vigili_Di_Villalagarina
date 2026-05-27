@@ -48,7 +48,7 @@ func main() {
 			Lat:      45.921549,
 			Lon:      11.032031,
 			Topic:    topic + "/ID_1_Vigili_VillaLagarina_TN/Rio_Val_Morela_0",
-		},421342415
+		},
 		{
 			ClientId: "id_TN_VL_2",
 			Label:    "Rio Piazzo 0",
@@ -127,4 +127,3 @@ func main() {
 		}
 	}
 }
-

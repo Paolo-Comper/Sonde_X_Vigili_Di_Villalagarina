@@ -1,16 +1,16 @@
 {
   "soglia":
   {
-    "fiume1": 1.9,
-    "fiume2": 7.54,
-    "fiume3": 3.3,
-    "fiume4": 6.13
+    "fiume1": 100.3,
+    "fiume2": 130.12,
+    "fiume3": 83.9,
+    "fiume4": 99.13
   },
 
   "links":
   [
     { "from": "Rio Molini 0", "to": "Rio Piazzo 0" },
-    { "from": "Rio Val Morela", "to": "Rio Piazzo 0" },
+    { "from": "Rio Val Morela 0", "to": "Rio Piazzo 0" },
     { "from": "Rio San Clemente 0", "to": "Fiume Adige" },
     { "from": "Rio Piazzo 0", "to": "Fiume Adige" }
   ]

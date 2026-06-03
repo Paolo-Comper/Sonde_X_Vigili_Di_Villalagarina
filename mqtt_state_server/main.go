@@ -149,7 +149,7 @@ func parse_topic(topic string) string {
 	if len(parts) < 2 {
 		return ""
 	}
-	return parts[1]
+	return parts[2]
 }
 
 // HTTP

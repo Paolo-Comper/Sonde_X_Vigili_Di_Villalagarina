@@ -9,10 +9,10 @@
 
   "links":
   [
-    { "from": "fiume1", "to": "fiume2" },
-    { "from": "fiume2", "to": "fiume3" },
-    { "from": "fiume3", "to": "fiume4" },
-    { "from": "fiume3", "to": "fiume5" }
+    { "from": "Rio Molini 0", "to": "Rio Piazzo 0" },
+    { "from": "Rio Val Morela", "to": "Rio Piazzo 0" },
+    { "from": "Rio San Clemente 0", "to": "Fiume Adige" },
+    { "from": "Rio Piazzo 0", "to": "Fiume Adige" }
   ]
 }
 

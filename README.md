@@ -1,82 +1,59 @@
 # Progetto Sonde per i Vigili del Fuoco – Villalagarina
 
-## Installation
+Sistema di monitoraggio di piu' sonde (livello dei corsi d'acqua e qualita'
+dell'aria) che inviano le misure via MQTT; un'unica applicazione le raccoglie,
+le salva su SQLite e le mostra in una dashboard web.
 
-### Dependencies
+## Struttura del repository
 
-#### Required (runtime)
+| Cartella | Contenuto |
+|----------|-----------|
+| [`sonde/`](sonde/) | L'applicazione completa (server MQTT + dashboard web) |
+| [`Esp32Sim/`](Esp32Sim/) | Firmware/simulatore ESP32 che pubblica le misure |
 
-* Node.js
-* npm
-* Go (Golang)
+### Applicazione (`sonde/`)
 
-#### Optional (development & testing)
-
-* mosquitto-clients (for MQTT testing)
-* platformio-cli (for firmware development)
-
-## Install on Linux / Termux
-
-### Debian / Ubuntu
+Un solo binario Go: si collega al broker MQTT, gestisce piu' dispositivi
+contemporaneamente, salva su SQLite, serve la dashboard incorporata ed esporta
+i dati in CSV/JSON con query SQL.
 
 ```bash
-sudo apt update
-sudo apt install nodejs npm golang-go git
-
-# Optional (testing)
-sudo apt install mosquitto-clients
+cd sonde
+go build -o sonde .
+./sonde --no-browser
 ```
 
-### Termux
+Dettagli, opzioni e API: vedi [`sonde/README.md`](sonde/README.md).
+
+### Firmware ESP32 (`Esp32Sim/`)
+
+Progetto [PlatformIO](https://platformio.org/) per LILYGO T-SIM7600G-H con
+sensori AJ-SR04M (ultrasuoni) e VL53L5CX (ToF). Pubblica su
+`421342415/<device_id>` un JSON con `label`, posizione e misure.
 
 ```bash
-pkg update
-pkg install nodejs npm golang git
-
-# Optional (testing)
-pkg install mosquitto
+cd Esp32Sim
+pio run -t upload
 ```
 
-## Clone the repository
+## Requisiti
+
+- Go 1.24+ (per l'applicazione)
+- PlatformIO (per il firmware)
+- Un broker MQTT raggiungibile (default: `broker.hivemq.com:1883`)
+
+## Avvio rapido (senza hardware)
 
 ```bash
-git clone https://github.com/Paolo-Comper/Sonde_X_Vigili_Di_Villalagarina.git
-cd Sonde_X_Vigili_Di_Villalagarina
+cd sonde
+go run . --test
 ```
 
-## Run the project
+Apre la dashboard su `http://localhost:8080` con dati simulati da piu'
+dispositivi.
 
-Assuming you are inside the `Sonde_X_Vigili_Di_Villalagarina` directory.
+## Note
 
-### Terminal 1 – Server
-
-By default, the server exposes a JSON file at: `http://localhost:8080/state.json`
-
-You should see a message like: `Server HTTP su http://localhost:8080/state.json`
-
-Run:
-
-```bash
-cd mqtt_state_server/
-go run main.go
-```
-
-### Terminal 2 – Dashboard
-
-```bash
-cd Dashboard/
-npx serve .
-```
-
-### Terminal 3 – Testing (optional)
-
-```bash
-./Test/test.sh
-```
-
-## Notes
-
-* Make sure all dependencies are installed before running the project
-* The dashboard reads data from the HTTP server
-* MQTT testing tools are optional but useful during development
-
+- Il nome mostrato sul web e' il campo `label` del payload MQTT.
+- La porta HTTP di default e' `8080`, modificabile con il flag `--port` o con
+  la variabile d'ambiente `PORT`.

@@ -94,21 +94,21 @@ func TestMQTTEndToEnd(t *testing.T) {
 	var devices []store.Device
 	for time.Now().Before(deadline) {
 		devices, _ = st.ListDevices()
-		if len(devices) >= 6 {
+		if len(devices) >= 4 {
 			break
 		}
 		time.Sleep(50 * time.Millisecond)
 	}
 
-	if len(devices) < 6 {
-		t.Fatalf("dispositivi ricevuti = %d, attesi almeno 6", len(devices))
+	if len(devices) < 4 {
+		t.Fatalf("dispositivi ricevuti = %d, attesi almeno 4", len(devices))
 	}
 
 	st2, err := st.Stats()
 	if err != nil {
 		t.Fatalf("Stats: %v", err)
 	}
-	if st2.Readings < 6 {
-		t.Errorf("misure = %d, attese almeno 6", st2.Readings)
+	if st2.Readings < 4 {
+		t.Errorf("misure = %d, attese almeno 4", st2.Readings)
 	}
 }

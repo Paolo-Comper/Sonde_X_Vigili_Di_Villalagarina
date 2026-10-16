@@ -46,8 +46,8 @@ function deviceFeatures() {
   return { type: 'FeatureCollection', features };
 }
 
-/* Risolve un riferimento (id o label) in coordinate: prima tra i device noti,
-   poi tra i nodi virtuali della topologia (es. un fiume senza sonda). */
+/* Risolve un riferimento (id o label) solo tra le sonde reali: un collegamento
+   verso un punto senza sonda viene ignorato, per non disegnare frecce nel vuoto. */
 function nodeCoord(key) {
   const k = String(key || '').toLowerCase();
   for (const d of devices) {
@@ -57,10 +57,6 @@ function nodeCoord(key) {
     const lon = (m && m.lon !== null && m.lon !== undefined) ? m.lon : d.lon;
     if (lat === null || lat === undefined || lon === null || lon === undefined) return null;
     return { lat, lon, label: d.label };
-  }
-  for (const n of topology.nodes) {
-    if (String(n.id).toLowerCase() !== k && String(n.label || '').toLowerCase() !== k) continue;
-    return { lat: n.lat, lon: n.lon, label: n.label || n.id };
   }
   return null;
 }

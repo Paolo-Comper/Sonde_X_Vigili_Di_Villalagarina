@@ -1,6 +1,7 @@
 // Package topology descrive come le sonde sono collegate tra loro (affluenze).
-// from/to possono riferirsi a un device (per id o label) oppure a un nodo
-// virtuale definito in "nodes" (es. un fiume senza sonda).
+// from/to si riferiscono a sonde reali (per id o label): i collegamenti verso
+// punti senza sonda vengono semplicemente ignorati, cosi' non si disegnano
+// frecce che puntano nel vuoto.
 package topology
 
 import (
@@ -9,24 +10,14 @@ import (
 	"os"
 )
 
-// Node e' un punto noto della rete che non coincide necessariamente con una
-// sonda (ad esempio lo sbocco in un fiume).
-type Node struct {
-	ID    string  `json:"id"`
-	Label string  `json:"label"`
-	Lat   float64 `json:"lat"`
-	Lon   float64 `json:"lon"`
-}
-
 // Link e' un collegamento diretto da una sonda a valle (affluenza).
 type Link struct {
 	From string `json:"from"`
 	To   string `json:"to"`
 }
 
-// Topology e' l'insieme di nodi virtuali e collegamenti configurati.
+// Topology e' l'insieme dei collegamenti configurati.
 type Topology struct {
-	Nodes []Node `json:"nodes"`
 	Links []Link `json:"links"`
 }
 
@@ -51,9 +42,6 @@ func Parse(data []byte) (Topology, error) {
 	}
 	if err := json.Unmarshal(data, &t); err != nil {
 		return Topology{}, fmt.Errorf("topology: %w", err)
-	}
-	if t.Nodes == nil {
-		t.Nodes = []Node{}
 	}
 	if t.Links == nil {
 		t.Links = []Link{}

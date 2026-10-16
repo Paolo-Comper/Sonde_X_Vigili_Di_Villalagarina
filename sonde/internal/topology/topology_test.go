@@ -6,19 +6,21 @@ import (
 
 func TestParse(t *testing.T) {
 	data := []byte(`{
-		"nodes": [{"id": "Fiume Adige", "label": "Fiume Adige", "lat": 45.886, "lon": 11.044}],
-		"links": [{"from": "Rio Molini 0", "to": "Rio Piazzo 0"}]
+		"links": [
+			{"from": "Rio Molini 0", "to": "Rio Piazzo 0"},
+			{"from": "Rio Val Morela 0", "to": "Rio Piazzo 0"}
+		]
 	}`)
 
 	topo, err := Parse(data)
 	if err != nil {
 		t.Fatalf("Parse: %v", err)
 	}
-	if len(topo.Nodes) != 1 || topo.Nodes[0].ID != "Fiume Adige" {
-		t.Fatalf("nodi inattesi: %+v", topo.Nodes)
-	}
-	if len(topo.Links) != 1 || topo.Links[0].From != "Rio Molini 0" || topo.Links[0].To != "Rio Piazzo 0" {
+	if len(topo.Links) != 2 {
 		t.Fatalf("link inattesi: %+v", topo.Links)
+	}
+	if topo.Links[0].From != "Rio Molini 0" || topo.Links[0].To != "Rio Piazzo 0" {
+		t.Fatalf("primo link inatteso: %+v", topo.Links[0])
 	}
 }
 
@@ -27,8 +29,19 @@ func TestParseEmpty(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Parse(nil): %v", err)
 	}
-	if len(topo.Nodes) != 0 || len(topo.Links) != 0 {
+	if len(topo.Links) != 0 {
 		t.Fatalf("atteso vuoto, ottenuto: %+v", topo)
+	}
+}
+
+func TestParseIgnoresUnknownFields(t *testing.T) {
+	// Un eventuale campo "nodes" di vecchie configurazioni viene ignorato.
+	topo, err := Parse([]byte(`{"nodes": [{"id": "x"}], "links": [{"from": "A", "to": "B"}]}`))
+	if err != nil {
+		t.Fatalf("Parse: %v", err)
+	}
+	if len(topo.Links) != 1 {
+		t.Fatalf("link inattesi: %+v", topo.Links)
 	}
 }
 

@@ -67,10 +67,11 @@ func Run(opts Options, logf func(format string, args ...any)) error {
 	return nil
 }
 
+// Ogni sonda misura sia il livello idrico sia la qualita' dell'aria: non c'e'
+// distinzione di tipo, il payload contiene entrambe le famiglie di grandezze.
 type device struct {
 	id    string
 	label string
-	kind  string // "level" | "air"
 	lat   float64
 	lon   float64
 
@@ -83,12 +84,10 @@ type device struct {
 
 func defaultDevices() []device {
 	return []device{
-		{id: "Rio_Molini_0", label: "Rio Molini 0", kind: "level", lat: 45.915771, lon: 11.024346, level: 120},
-		{id: "Rio_Val_Morela_0", label: "Rio Val Morela 0", kind: "level", lat: 45.921549, lon: 11.032031, level: 145},
-		{id: "Rio_Piazzo_0", label: "Rio Piazzo 0", kind: "level", lat: 45.924787, lon: 11.034732, level: 90},
-		{id: "Rio_San_Clemente_0", label: "Rio San Clemente 0", kind: "level", lat: 45.924960, lon: 11.037627, level: 105},
-		{id: "rpi-zero-1", label: "Aria Rovereto Centro", kind: "air", lat: 45.890000, lon: 11.040000, pm25: 12, temp: 15, hum: 65, press: 1010},
-		{id: "rpi-zero-2", label: "Aria Villalagarina", kind: "air", lat: 45.913500, lon: 11.030100, pm25: 9, temp: 14, hum: 70, press: 1009},
+		{id: "Rio_Molini_0", label: "Rio Molini 0", lat: 45.915771, lon: 11.024346, level: 120, pm25: 11, temp: 15, hum: 66, press: 1010},
+		{id: "Rio_Val_Morela_0", label: "Rio Val Morela 0", lat: 45.921549, lon: 11.032031, level: 145, pm25: 9, temp: 14, hum: 70, press: 1009},
+		{id: "Rio_Piazzo_0", label: "Rio Piazzo 0", lat: 45.924787, lon: 11.034732, level: 90, pm25: 13, temp: 16, hum: 63, press: 1011},
+		{id: "Rio_San_Clemente_0", label: "Rio San Clemente 0", lat: 45.924960, lon: 11.037627, level: 105, pm25: 10, temp: 15.5, hum: 68, press: 1010},
 	}
 }
 
@@ -96,45 +95,41 @@ func (d *device) message(root string) (string, []byte) {
 	topic := root + "/" + d.id
 	now := float64(time.Now().UnixMilli()) / 1000.0
 
-	var payload any
-	if d.kind == "level" {
-		d.level = walk(d.level, 6, 20, 320)
-		us := round2(d.level + noise(1.5))
-		tof := round2(us + noise(0.8))
-		payload = map[string]any{
-			"client-id":     "id_" + d.id,
-			"label":         d.label,
-			"lat":           d.lat,
-			"lon":           d.lon,
-			"ultrasonic_cm": us,
-			"tof_cm":        tof,
-			"rssi":          10 + rand.Intn(22),
-			"net":           []string{"LTE", "4G", "3G"}[rand.Intn(3)],
-		}
-	} else {
-		d.pm25 = walk(d.pm25, 4, 0, 90)
-		d.temp = walk(d.temp, 0.6, -5, 35)
-		d.hum = walk(d.hum, 2, 20, 100)
-		d.press = walk(d.press, 1.2, 980, 1040)
-		pm1 := round2(math.Max(0, d.pm25-4+noise(1)))
-		pm10 := round2(d.pm25 + 5 + noise(2))
-		tempDHT := round2(d.temp + noise(0.4))
-		humDHT := round2(clamp(d.hum+noise(2), 0, 100))
-		tempBME := round2(d.temp + noise(0.3))
-		humBME := round2(clamp(d.hum+noise(1), 0, 100))
-		pressBME := round2(d.press*100 + noise(30))
-		payload = map[string]any{
-			"timestamp": now,
-			"label":     d.label,
-			"pms": map[string]any{
-				"pm1": pm1, "pm25": round2(d.pm25), "pm10": pm10,
-				"temperature": round2(d.temp + noise(0.5)), "humidity": round2(clamp(d.hum+noise(3), 0, 100)),
-			},
-			"dht22":   map[string]any{"temperature": tempDHT, "humidity": humDHT},
-			"bme280":  map[string]any{"temperature": tempBME, "humidity": humBME, "pressure": pressBME},
-			"virtual": map[string]any{"temperature": round2((tempDHT + tempBME) / 2), "humidity": round2((humDHT + humBME) / 2), "pressure": pressBME},
-			"gps":     map[string]any{"lat": d.lat, "lon": d.lon, "alt": 180.0, "sats": 6 + rand.Intn(6), "valid": true},
-		}
+	d.level = walk(d.level, 6, 20, 320)
+	us := round2(d.level + noise(1.5))
+	tof := round2(us + noise(0.8))
+
+	d.pm25 = walk(d.pm25, 4, 0, 90)
+	d.temp = walk(d.temp, 0.6, -5, 35)
+	d.hum = walk(d.hum, 2, 20, 100)
+	d.press = walk(d.press, 1.2, 980, 1040)
+
+	pm1 := round2(math.Max(0, d.pm25-4+noise(1)))
+	pm10 := round2(d.pm25 + 5 + noise(2))
+	tempDHT := round2(d.temp + noise(0.4))
+	humDHT := round2(clamp(d.hum+noise(2), 0, 100))
+	tempBME := round2(d.temp + noise(0.3))
+	humBME := round2(clamp(d.hum+noise(1), 0, 100))
+	pressBME := round2(d.press*100 + noise(30))
+
+	payload := map[string]any{
+		"client-id":     "id_" + d.id,
+		"label":         d.label,
+		"timestamp":     now,
+		"lat":           d.lat,
+		"lon":           d.lon,
+		"ultrasonic_cm": us,
+		"tof_cm":        tof,
+		"rssi":          10 + rand.Intn(22),
+		"net":           []string{"LTE", "4G", "3G"}[rand.Intn(3)],
+		"pms": map[string]any{
+			"pm1": pm1, "pm25": round2(d.pm25), "pm10": pm10,
+			"temperature": round2(d.temp + noise(0.5)), "humidity": round2(clamp(d.hum+noise(3), 0, 100)),
+		},
+		"dht22":   map[string]any{"temperature": tempDHT, "humidity": humDHT},
+		"bme280":  map[string]any{"temperature": tempBME, "humidity": humBME, "pressure": pressBME},
+		"virtual": map[string]any{"temperature": round2((tempDHT + tempBME) / 2), "humidity": round2((humDHT + humBME) / 2), "pressure": pressBME},
+		"gps":     map[string]any{"lat": d.lat, "lon": d.lon, "alt": 180.0, "sats": 6 + rand.Intn(6), "valid": true},
 	}
 
 	data, _ := json.Marshal(payload)

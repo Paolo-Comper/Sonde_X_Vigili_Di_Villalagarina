@@ -2,34 +2,27 @@
    disponibile (es. nessuna connessione per le tile) e vista d'insieme. */
 
 // Costruisce nodi e archi risolvendo from/to per label oppure per id.
+// I nodi sono solo sonde reali: i collegamenti verso punti senza sonda (es. il
+// fiume) vengono ignorati, mentre la sonda resta comunque nel grafo.
 function graphModel() {
-  const nodes = [];
+  const nodes = devices.map(d => ({
+    key: String(d.label).toLowerCase(),
+    label: d.label,
+    deviceId: d.id,
+    edgesTo: []
+  }));
+
   const alias = new Map();
-
-  function add(label, deviceId) {
-    const node = { key: String(label).toLowerCase(), label: label, deviceId: deviceId || null, edgesTo: [] };
-    nodes.push(node);
-    alias.set(node.key, node);
-    if (deviceId) alias.set(String(deviceId).toLowerCase(), node);
-    return node;
-  }
-
-  function resolve(ref) {
-    const k = String(ref || '').toLowerCase();
-    if (alias.has(k)) return alias.get(k);
-    const node = { key: k, label: String(ref), deviceId: null, edgesTo: [] };
-    nodes.push(node);
-    alias.set(k, node);
-    return node;
-  }
-
-  devices.forEach(d => add(d.label, d.id));
-  (topology.nodes || []).forEach(n => add(n.label || n.id, null));
+  nodes.forEach(n => {
+    alias.set(n.key, n);
+    alias.set(String(n.deviceId).toLowerCase(), n);
+  });
 
   const edges = [];
   (topology.links || []).forEach(l => {
-    const from = resolve(l.from);
-    const to = resolve(l.to);
+    const from = alias.get(String(l.from || '').toLowerCase());
+    const to = alias.get(String(l.to || '').toLowerCase());
+    if (!from || !to) return;
     from.edgesTo.push(to.key);
     edges.push({ from: from.key, to: to.key });
   });

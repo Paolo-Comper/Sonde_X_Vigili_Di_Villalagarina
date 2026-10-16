@@ -1,11 +1,6 @@
 {
-  "nodes": [
-    { "id": "Fiume Adige", "label": "Fiume Adige", "lat": 45.8860, "lon": 11.0440 }
-  ],
   "links": [
     { "from": "Rio Molini 0", "to": "Rio Piazzo 0" },
-    { "from": "Rio Val Morela 0", "to": "Rio Piazzo 0" },
-    { "from": "Rio Piazzo 0", "to": "Fiume Adige" },
-    { "from": "Rio San Clemente 0", "to": "Fiume Adige" }
+    { "from": "Rio Val Morela 0", "to": "Rio Piazzo 0" }
   ]
 }

@@ -13,7 +13,8 @@ Villalagarina. Un solo binario Go che:
 
 Il progetto nasce come evoluzione di
 [mimosa-dashboard](https://github.com/Paolo-Comper/mimosa-dashboard), ma
-gestisce piu' sonde idrometriche e stazioni di qualita' dell'aria insieme.
+gestisce piu' sonde insieme: ogni sonda misura sia il livello idrico sia la
+qualita' dell'aria, senza distinzione di tipo.
 
 ## Requisiti
 
@@ -47,9 +48,9 @@ browser:
 ./sonde --test
 ```
 
-La modalita' `--test` pubblica dati simulati da **6 dispositivi** (4 sonde
-idrometriche + 2 stazioni aria) sullo stesso broker a cui l'app si collega,
-utile per provare la dashboard end-to-end.
+La modalita' `--test` pubblica dati simulati da **4 sonde** (ognuna misura sia
+il livello idrico sia la qualita' dell'aria) sullo stesso broker a cui l'app si
+collega, utile per provare la dashboard end-to-end.
 
 ## Opzioni principali
 
@@ -158,19 +159,17 @@ incorporato nel binario come default):
 
 ```json
 {
-  "nodes": [
-    { "id": "Fiume Adige", "label": "Fiume Adige", "lat": 45.8860, "lon": 11.0440 }
-  ],
   "links": [
     { "from": "Rio Molini 0", "to": "Rio Piazzo 0" },
-    { "from": "Rio Piazzo 0", "to": "Fiume Adige" }
+    { "from": "Rio Val Morela 0", "to": "Rio Piazzo 0" }
   ]
 }
 ```
 
-- `from` / `to` possono essere la **label** o l'**id** di una sonda; in
-  alternativa un nodo di `nodes` (utile per uno sbocco senza sonda, come il
-  fiume).
+- `from` / `to` devono essere la **label** o l'**id** di una sonda reale. I
+  collegamenti verso punti senza sonda (es. lo sbocco in un fiume) vengono
+  ignorati: niente frecce che puntano nel vuoto, e la sonda resta comunque nel
+  grafo come nodo.
 - Nella vista "tutti" la mappa disegna le frecce delle affluenze e compare il
   **grafo** della rete; con un dispositivo selezionato le frecce sono nascoste.
 

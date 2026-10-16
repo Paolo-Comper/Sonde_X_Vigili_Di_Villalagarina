@@ -148,12 +148,17 @@ tr.exported td { background: rgba(46, 204, 113, 0.08); }
   display: flex; align-items: flex-start; justify-content: center;
   padding: 40px 16px; overflow-y: auto; z-index: 50;
 }
+.overlay[hidden] { display: none; }
 .modal {
   background: var(--panel); border: 1px solid var(--border); border-radius: 12px;
   padding: 18px; width: 100%; max-width: 760px; box-shadow: var(--shadow);
 }
 .modal h3 { margin-top: 0; }
-.export-options { margin: 12px 0; gap: 18px; }
+.field-title {
+  display: block; margin: 14px 0 6px; font-size: 11px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted);
+}
+.export-options { margin: 0; gap: 18px; }
 .check { display: flex; align-items: center; gap: 6px; font-size: 13px; }
 .schema-help { margin: 10px 0; }
 .schema-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }

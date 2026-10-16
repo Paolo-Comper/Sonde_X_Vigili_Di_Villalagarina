@@ -10,7 +10,7 @@
     const btn = $('themeToggle');
     if (!btn) return;
     const dark = current() === 'dark';
-    btn.textContent = dark ? '☀️ Giorno' : '🌙 Notte';
+    btn.textContent = dark ? 'Giorno' : 'Notte';
   }
 
   function apply(theme) {

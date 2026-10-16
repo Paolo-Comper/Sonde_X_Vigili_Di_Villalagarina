@@ -92,7 +92,7 @@ function renderTable() {
       '<td>' + fmt(pressureHpa(m), 1) + '</td>' +
       '<td>' + fmt(m.lat, 4) + '</td>' +
       '<td>' + fmt(m.lon, 4) + '</td>' +
-      '<td>' + (m.exported ? '✅' : '') + '</td>' +
+      '<td>' + (m.exported ? '<span class="badge">Sì</span>' : '') + '</td>' +
       '</tr>';
   }).join('');
 }

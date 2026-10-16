@@ -30,7 +30,7 @@
     </div>
   </div>
   <div class="header-actions">
-    <button id="themeToggle" class="btn btn-ghost" type="button">🌙 Notte</button>
+    <button id="themeToggle" class="btn btn-ghost" type="button">Notte</button>
   </div>
 </header>
 
@@ -103,8 +103,8 @@
     <div class="panel-row between">
       <h3>Misure</h3>
       <div class="export-buttons">
-        <button id="exportBtn" class="btn btn-success">📥 Esporta</button>
-        <button id="clearExported" class="btn btn-warning">🧹 Cancella esportate</button>
+        <button id="exportBtn" class="btn btn-success">Esporta</button>
+        <button id="clearExported" class="btn btn-warning">Cancella esportate</button>
       </div>
     </div>
     <div class="table-wrapper">
@@ -152,16 +152,19 @@
       <div id="schemaList" class="schema-list"></div>
     </details>
 
+    <span class="field-title">Formati</span>
     <div class="panel-row export-options">
       <label class="check"><input type="checkbox" id="fmtCSV" checked> CSV</label>
       <label class="check"><input type="checkbox" id="fmtJSON"> JSON</label>
       <label class="check"><input type="checkbox" id="fmtZIP"> ZIP (CSV+JSON)</label>
-      <label class="check"><input type="checkbox" id="markExported" checked> Segna come esportate</label>
     </div>
+
+    <span class="field-title">Segna come esportate</span>
+    <label class="check"><input type="checkbox" id="markExported" checked> Marca i record scaricati</label>
 
     <div class="panel-row">
       <button id="previewBtn" class="btn">Anteprima</button>
-      <button id="downloadBtn" class="btn btn-primary">⬇️ Scarica</button>
+      <button id="downloadBtn" class="btn btn-primary">Scarica</button>
     </div>
 
     <div id="exportMessage" class="export-message"></div>

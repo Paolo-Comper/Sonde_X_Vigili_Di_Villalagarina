@@ -24,6 +24,11 @@ async function loadStats() {
   stats = await fetchJSON('/api/stats');
 }
 
+async function loadTopology() {
+  const out = await fetchJSON('/api/topology');
+  topology = { nodes: out.nodes || [], links: out.links || [] };
+}
+
 async function loadReadings() {
   const params = new URLSearchParams({ limit: READINGS_LIMIT });
   if (selectedDevice !== ALL) params.set('device', selectedDevice);

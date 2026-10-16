@@ -16,6 +16,7 @@ import (
 	"sonde/internal/hub"
 	"sonde/internal/store"
 	"sonde/internal/telemetry"
+	"sonde/internal/topology"
 )
 
 func newTestServer(t *testing.T) (*Server, *store.Store) {
@@ -27,7 +28,7 @@ func newTestServer(t *testing.T) (*Server, *store.Store) {
 	t.Cleanup(func() { s.Close() })
 
 	h := hub.New()
-	srv := New(s, h, fstest.MapFS{}, log.New(io.Discard, "", 0))
+	srv := New(s, h, topology.Topology{}, fstest.MapFS{}, log.New(io.Discard, "", 0))
 
 	cm := 123.45
 	lat := 45.915771

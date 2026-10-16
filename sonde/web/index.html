@@ -23,13 +23,14 @@
 
 <header>
   <div class="brand">
-    <img src="res/vvf.png" alt="Vigili del Fuoco" class="logo">
+    <img src="res/vvf.png" alt="Vigili del Fuoco" class="logo logo-vvf">
     <div class="title">
       <h1>sonde</h1>
       <p class="subtitle">Monitoraggio livelli idrici e qualit&agrave; dell'aria</p>
     </div>
   </div>
   <div class="header-actions">
+    <img src="res/LogoMarconi.png" alt="IIS Marconi" class="logo logo-school">
     <button id="themeToggle" class="btn btn-ghost" type="button">Notte</button>
   </div>
 </header>
@@ -89,6 +90,11 @@
   <section class="panel map-panel">
     <h3>Mappa dispositivi</h3>
     <div id="map"></div>
+  </section>
+
+  <section class="panel graph-panel" id="graphSection" hidden>
+    <h3>Grafo affluenze</h3>
+    <div id="graphContainer"></div>
   </section>
 
   <section class="panel data-panel">
@@ -169,6 +175,7 @@
 <script src="js/api.js"></script>
 <script src="js/charts.js"></script>
 <script src="js/map.js"></script>
+<script src="js/graph.js"></script>
 <script src="js/table.js"></script>
 <script src="js/export.js"></script>
 <script src="js/main.js"></script>

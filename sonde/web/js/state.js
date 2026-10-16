@@ -10,6 +10,7 @@ let devices = [];
 let readings = [];
 let latestByDevice = {};
 let stats = {};
+let topology = { nodes: [], links: [] };
 let selectedDevice = ALL;
 let sse = null;
 let renderTimer = null;

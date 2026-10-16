@@ -46,8 +46,127 @@ function deviceFeatures() {
   return { type: 'FeatureCollection', features };
 }
 
+/* Risolve un riferimento (id o label) in coordinate: prima tra i device noti,
+   poi tra i nodi virtuali della topologia (es. un fiume senza sonda). */
+function nodeCoord(key) {
+  const k = String(key || '').toLowerCase();
+  for (const d of devices) {
+    if (String(d.id).toLowerCase() !== k && String(d.label).toLowerCase() !== k) continue;
+    const m = latestByDevice[d.id];
+    const lat = (m && m.lat !== null && m.lat !== undefined) ? m.lat : d.lat;
+    const lon = (m && m.lon !== null && m.lon !== undefined) ? m.lon : d.lon;
+    if (lat === null || lat === undefined || lon === null || lon === undefined) return null;
+    return { lat, lon, label: d.label };
+  }
+  for (const n of topology.nodes) {
+    if (String(n.id).toLowerCase() !== k && String(n.label || '').toLowerCase() !== k) continue;
+    return { lat: n.lat, lon: n.lon, label: n.label || n.id };
+  }
+  return null;
+}
+
+function bearingDeg(a, b) {
+  const toRad = Math.PI / 180;
+  const lat1 = a.lat * toRad;
+  const lat2 = b.lat * toRad;
+  const dLon = (b.lon - a.lon) * toRad;
+  const y = Math.sin(dLon) * Math.cos(lat2);
+  const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLon);
+  return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
+}
+
+// Tratti e punte di freccia dei collegamenti di affluenza.
+function linkFeatures() {
+  const features = [];
+  (topology.links || []).forEach(l => {
+    const a = nodeCoord(l.from);
+    const b = nodeCoord(l.to);
+    if (!a || !b) return;
+    features.push({
+      type: 'Feature',
+      properties: { kind: 'line' },
+      geometry: { type: 'LineString', coordinates: [[a.lon, a.lat], [b.lon, b.lat]] }
+    });
+    // Punta poco prima della destinazione, per non finire sotto il marker.
+    const t = 0.82;
+    features.push({
+      type: 'Feature',
+      properties: { kind: 'arrow', bearing: bearingDeg(a, b) },
+      geometry: {
+        type: 'Point',
+        coordinates: [a.lon + (b.lon - a.lon) * t, a.lat + (b.lat - a.lat) * t]
+      }
+    });
+  });
+  return { type: 'FeatureCollection', features };
+}
+
+// Punta di freccia rivolta a nord; la rotazione la applica icon-rotate.
+function arrowIcon() {
+  const size = 28;
+  const canvas = document.createElement('canvas');
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#e74c3c';
+  ctx.beginPath();
+  ctx.moveTo(size / 2, 2);
+  ctx.lineTo(size - 5, size - 3);
+  ctx.lineTo(size / 2, size - 9);
+  ctx.lineTo(5, size - 3);
+  ctx.closePath();
+  ctx.fill();
+  return { width: size, height: size, data: ctx.getImageData(0, 0, size, size).data };
+}
+
+function addLinkLayers() {
+  if (!sondeMap || sondeMap.getSource('links')) return;
+  sondeMap.addSource('links', { type: 'geojson', data: emptyFC() });
+  sondeMap.addLayer({
+    id: 'links-line',
+    type: 'line',
+    source: 'links',
+    filter: ['==', ['get', 'kind'], 'line'],
+    paint: {
+      'line-color': '#e74c3c',
+      'line-width': 1.6,
+      'line-opacity': 0.55,
+      'line-dasharray': [2, 2]
+    }
+  });
+  if (!sondeMap.hasImage('sonde-arrow')) sondeMap.addImage('sonde-arrow', arrowIcon());
+  sondeMap.addLayer({
+    id: 'links-arrow',
+    type: 'symbol',
+    source: 'links',
+    filter: ['==', ['get', 'kind'], 'arrow'],
+    layout: {
+      'icon-image': 'sonde-arrow',
+      'icon-size': ['interpolate', ['linear'], ['zoom'], 9, 0.5, 14, 0.85],
+      'icon-rotate': ['get', 'bearing'],
+      'icon-rotation-alignment': 'map',
+      'icon-allow-overlap': true,
+      'icon-ignore-placement': true
+    }
+  });
+}
+
+function updateLinks() {
+  if (!sondeMap) return;
+  const src = sondeMap.getSource('links');
+  if (!src) return;
+  src.setData(linkFeatures());
+  const visibility = selectedDevice === ALL ? 'visible' : 'none';
+  ['links-line', 'links-arrow'].forEach(id => {
+    if (sondeMap.getLayer(id)) sondeMap.setLayoutProperty(id, 'visibility', visibility);
+  });
+}
+
 function addMapLayers() {
-  if (!sondeMap || sondeMap.getSource('devices')) return;
+  if (!sondeMap) return;
+  // I collegamenti stanno sotto ai marker dei dispositivi.
+  addLinkLayers();
+  if (sondeMap.getSource('devices')) return;
 
   sondeMap.addSource('devices', { type: 'geojson', data: emptyFC() });
   sondeMap.addLayer({
@@ -84,6 +203,8 @@ function updateMap() {
 
   const fc = deviceFeatures();
   src.setData(fc);
+
+  updateLinks();
 
   if (selectedDevice !== ALL) {
     // Un dispositivo specifico: centra la mappa su di lui (solo al cambio).

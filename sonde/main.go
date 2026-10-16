@@ -24,16 +24,21 @@ import (
 	"sonde/internal/ingest"
 	"sonde/internal/sim"
 	"sonde/internal/store"
+	"sonde/internal/topology"
 )
 
 //go:embed web
 var webAssets embed.FS
+
+//go:embed topology.json
+var defaultTopology []byte
 
 type config struct {
 	broker    string
 	topic     string
 	clientID  string
 	dbPath    string
+	topology  string
 	port      int
 	dev       bool
 	noBrowser bool
@@ -64,8 +69,13 @@ func main() {
 	}
 	defer st.Close()
 
+	topo, err := topology.Load(cfg.topology, defaultTopology)
+	if err != nil {
+		logger.Fatalf("topology: %v", err)
+	}
+
 	h := hub.New()
-	server := api.New(st, h, webFS, logger)
+	server := api.New(st, h, topo, webFS, logger)
 
 	listener, err := listen(cfg.port)
 	if err != nil {
@@ -141,6 +151,7 @@ func parseFlags() config {
 	flag.StringVar(&cfg.topic, "topic", "421342415/#", "filtro topic MQTT da sottoscrivere")
 	flag.StringVar(&cfg.clientID, "client-id", "", "client id MQTT (default casuale)")
 	flag.StringVar(&cfg.dbPath, "db", "sonde.db", "percorso del database SQLite")
+	flag.StringVar(&cfg.topology, "topology", "topology.json", "file dei collegamenti tra sonde (env SONDE_TOPOLOGY)")
 	flag.IntVar(&cfg.port, "port", port, "porta HTTP (env PORT)")
 	flag.BoolVar(&cfg.dev, "dev", false, "serve la dashboard leggendo i file da disco")
 	flag.BoolVar(&cfg.noBrowser, "no-browser", false, "non aprire il browser")
@@ -163,6 +174,9 @@ func parseFlags() config {
 
 	if cfg.clientID == "" {
 		cfg.clientID = fmt.Sprintf("sonde-%d", time.Now().UnixNano())
+	}
+	if p := os.Getenv("SONDE_TOPOLOGY"); p != "" {
+		cfg.topology = p
 	}
 	return cfg
 }

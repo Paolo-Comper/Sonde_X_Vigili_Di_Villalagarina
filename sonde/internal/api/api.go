@@ -16,19 +16,21 @@ import (
 	"sonde/internal/export"
 	"sonde/internal/hub"
 	"sonde/internal/store"
+	"sonde/internal/topology"
 )
 
 // Server raggruppa le dipendenze degli handler HTTP.
 type Server struct {
 	store *store.Store
 	hub   *hub.Hub
+	topo  topology.Topology
 	web   fs.FS
 	log   *log.Logger
 }
 
 // New crea il server HTTP.
-func New(s *store.Store, h *hub.Hub, web fs.FS, logger *log.Logger) *Server {
-	return &Server{store: s, hub: h, web: web, log: logger}
+func New(s *store.Store, h *hub.Hub, topo topology.Topology, web fs.FS, logger *log.Logger) *Server {
+	return &Server{store: s, hub: h, topo: topo, web: web, log: logger}
 }
 
 // Handler costruisce il router.
@@ -38,6 +40,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("/api/latest", s.handleLatest)
 	mux.HandleFunc("/api/readings", s.handleReadings)
 	mux.HandleFunc("/api/stats", s.handleStats)
+	mux.HandleFunc("/api/topology", s.handleTopology)
 	mux.HandleFunc("/api/schema", s.handleSchema)
 	mux.HandleFunc("/api/query", s.handleQuery)
 	mux.HandleFunc("/api/export", s.handleExport)
@@ -95,6 +98,11 @@ func (s *Server) handleStats(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, st)
+}
+
+// handleTopology restituisce i collegamenti di affluenza configurati.
+func (s *Server) handleTopology(w http.ResponseWriter, r *http.Request) {
+	writeJSON(w, http.StatusOK, s.topo)
 }
 
 func (s *Server) handleSchema(w http.ResponseWriter, r *http.Request) {

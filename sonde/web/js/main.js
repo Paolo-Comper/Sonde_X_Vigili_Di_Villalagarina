@@ -29,10 +29,11 @@ function render() {
   updateCharts();
   renderTable();
   updateMap();
+  updateGraph();
 }
 
 async function refreshAll() {
-  await Promise.all([loadDevices(), loadStats(), loadReadings(), loadLatest()]);
+  await Promise.all([loadDevices(), loadStats(), loadReadings(), loadLatest(), loadTopology()]);
   render();
 }
 

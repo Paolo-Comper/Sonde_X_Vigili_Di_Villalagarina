@@ -7,6 +7,8 @@ Villalagarina. Un solo binario Go che:
   contemporaneamente**;
 - salva le misure su un database **SQLite**;
 - serve una **dashboard web** incorporata (nessun file esterno da copiare);
+- disegna sulla mappa i **collegamenti di affluenza** tra le sonde (frecce) e
+  ne mostra il **grafo**;
 - esporta i dati in **CSV/JSON** con query SQL personalizzabile.
 
 Il progetto nasce come evoluzione di
@@ -58,6 +60,7 @@ utile per provare la dashboard end-to-end.
 | `--client-id` | casuale | Client id MQTT |
 | `--username` / `--password` | vuoto | Credenziali MQTT |
 | `--db` | `sonde.db` | Percorso del database SQLite |
+| `--topology` | `topology.json` | File dei collegamenti tra sonde (env `SONDE_TOPOLOGY`) |
 | `--port` | `8080` | Porta HTTP (sovrascrivibile con la variabile d'ambiente `PORT`) |
 | `--dev` | off | Serve la dashboard leggendo i file da disco (utile in sviluppo) |
 | `--no-browser` | off | Non apre il browser |
@@ -140,12 +143,36 @@ con SQL.
 - riepilogo dispositivi / misure / esportate / in attesa;
 - selezione del dispositivo (o "tutti"): non c'e' distinzione di tipo, ogni
   sonda mostra le grandezze che effettivamente invia;
-- valori correnti e mappa delle posizioni; con "tutti" si vede la mappa
-  d'insieme, con un dispositivo specifico compaiono i grafici storici e la
-  mappa evidenzia la sonda selezionata;
+- valori correnti e mappa delle posizioni; con "tutti" si vedono la mappa
+  d'insieme con le **frecce delle affluenze** e il **grafo** della rete, con un
+  dispositivo specifico compaiono i grafici storici e la mappa evidenzia la
+  sonda selezionata;
 - tabella delle ultime misure;
 - aggiornamento live via **Server-Sent Events**;
 - tema chiaro/scuro.
+
+## Collegamenti di affluenza (`topology.json`)
+
+La rete idrica si descrive con un file JSON (default `topology.json`, di norma
+incorporato nel binario come default):
+
+```json
+{
+  "nodes": [
+    { "id": "Fiume Adige", "label": "Fiume Adige", "lat": 45.8860, "lon": 11.0440 }
+  ],
+  "links": [
+    { "from": "Rio Molini 0", "to": "Rio Piazzo 0" },
+    { "from": "Rio Piazzo 0", "to": "Fiume Adige" }
+  ]
+}
+```
+
+- `from` / `to` possono essere la **label** o l'**id** di una sonda; in
+  alternativa un nodo di `nodes` (utile per uno sbocco senza sonda, come il
+  fiume).
+- Nella vista "tutti" la mappa disegna le frecce delle affluenze e compare il
+  **grafo** della rete; con un dispositivo selezionato le frecce sono nascoste.
 
 ## Esportazione
 
@@ -169,6 +196,7 @@ scrittura non puo' modificare il database.
 | GET | `/api/latest` | Ultima misura per dispositivo |
 | GET | `/api/readings?device=&limit=` | Misure recenti |
 | GET | `/api/stats` | Contatori aggregati |
+| GET | `/api/topology` | Collegamenti di affluenza configurati |
 | GET | `/api/schema` | Colonne della tabella `measurements` |
 | GET | `/api/query?sql=&limit=` | Anteprima di una `SELECT` |
 | GET | `/api/export?format=csv\|json\|zip&mark=0\|1&sql=` | Download |
@@ -191,6 +219,7 @@ mediante un broker MQTT in-process.
 ```
 sonde/
   main.go                     avvio, flag e ciclo di vita
+  topology.json               collegamenti di affluenza (default incorporato)
   integration_test.go         test end-to-end (broker in-process)
   internal/
     telemetry/                payload unificato + parsing topic
@@ -201,5 +230,6 @@ sonde/
     ingest/                   MQTT -> store -> SSE
     api/                      API HTTP e dashboard
     sim/                      simulatore --test
+    topology/                 lettura dei collegamenti di affluenza
   web/                        dashboard (HTML/CSS/JS)
 ```

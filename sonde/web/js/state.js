@@ -11,18 +11,11 @@ let readings = [];
 let latestByDevice = {};
 let stats = {};
 let selectedDevice = ALL;
-let selectedKind = 'all';
 let sse = null;
 let renderTimer = null;
 
-function kindMatches(kind) {
-  if (selectedKind === 'all') return true;
-  if (kind === selectedKind) return true;
-  return kind === 'misto';
-}
-
 function visibleDevices() {
-  return devices.filter(d => kindMatches(d.kind));
+  return devices;
 }
 
 function deviceById(id) {
@@ -35,10 +28,7 @@ function selectedDeviceLabel() {
   return d ? d.label : selectedDevice;
 }
 
-/* Misure visibili in tabella secondo i filtri correnti. */
+/* Misure visibili in tabella per il dispositivo selezionato. */
 function visibleReadings() {
-  return readings.filter(r =>
-    kindMatches(r.kind) &&
-    (selectedDevice === ALL || r.device_id === selectedDevice)
-  );
+  return readings.filter(r => selectedDevice === ALL || r.device_id === selectedDevice);
 }

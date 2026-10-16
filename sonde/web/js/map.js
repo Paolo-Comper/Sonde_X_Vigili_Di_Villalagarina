@@ -2,6 +2,7 @@
 
 let sondeMap = null;
 let mapFitted = false;
+let lastSelection = null;
 
 const MAP_STYLES = {
   light: 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
@@ -29,7 +30,7 @@ function deviceFeatures() {
       properties: {
         id: d.id,
         label: d.label,
-        kind: d.kind,
+        selected: d.id === selectedDevice,
         level: m ? m.water_level_cm : null,
         pm25: m ? m.pm25 : null,
         temp: m ? temperature(m) : null,
@@ -40,6 +41,8 @@ function deviceFeatures() {
       geometry: { type: 'Point', coordinates: [lon, lat] }
     });
   });
+  // Il dispositivo selezionato viene disegnato per ultimo, sopra gli altri.
+  features.sort((a, b) => (a.properties.selected ? 1 : 0) - (b.properties.selected ? 1 : 0));
   return { type: 'FeatureCollection', features };
 }
 
@@ -52,25 +55,16 @@ function addMapLayers() {
     type: 'circle',
     source: 'devices',
     paint: {
-      'circle-radius': 9,
-      'circle-color': [
-        'match', ['get', 'kind'],
-        'livello', '#2f7fd6',
-        'aria', '#2ecc71',
-        'misto', '#8e44ad',
-        '#888888'
-      ],
-      'circle-stroke-width': 2,
+      'circle-radius': ['case', ['get', 'selected'], 13, 8],
+      'circle-color': ['case', ['get', 'selected'], '#e74c3c', '#2f7fd6'],
+      'circle-stroke-width': ['case', ['get', 'selected'], 3, 2],
       'circle-stroke-color': '#ffffff',
-      'circle-opacity': 0.95
+      'circle-opacity': ['case', ['get', 'selected'], 1, 0.85]
     }
   });
   sondeMap.on('click', 'devices', e => {
     const p = e.features[0].properties;
-    const lines = [
-      '<strong>' + escapeHtml(p.label) + '</strong>',
-      'Tipo: ' + escapeHtml(p.kind)
-    ];
+    const lines = ['<strong>' + escapeHtml(p.label) + '</strong>'];
     if (p.level !== null && p.level !== undefined) lines.push('Livello: ' + fmt(p.level, 1) + ' cm');
     if (p.pm25 !== null && p.pm25 !== undefined) lines.push('PM2.5: ' + fmt(p.pm25, 0) + ' µg/m³');
     if (p.temp !== null && p.temp !== undefined) lines.push('Temp: ' + fmt(p.temp, 1) + ' °C');
@@ -91,12 +85,26 @@ function updateMap() {
   const fc = deviceFeatures();
   src.setData(fc);
 
-  if (!mapFitted && fc.features.length > 0) {
-    mapFitted = true;
-    const bounds = new maplibregl.LngLatBounds();
-    fc.features.forEach(f => bounds.extend(f.geometry.coordinates));
-    sondeMap.fitBounds(bounds, { padding: 60, maxZoom: 14, duration: 0 });
+  if (selectedDevice !== ALL) {
+    // Un dispositivo specifico: centra la mappa su di lui (solo al cambio).
+    const target = fc.features.find(f => f.properties.selected);
+    if (target && lastSelection !== selectedDevice) {
+      sondeMap.easeTo({
+        center: target.geometry.coordinates,
+        zoom: Math.max(sondeMap.getZoom(), 12),
+        duration: 500
+      });
+    }
+  } else if (!mapFitted || lastSelection !== ALL) {
+    // "Tutti": inquadra l'insieme dei dispositivi.
+    if (fc.features.length > 0) {
+      mapFitted = true;
+      const bounds = new maplibregl.LngLatBounds();
+      fc.features.forEach(f => bounds.extend(f.geometry.coordinates));
+      sondeMap.fitBounds(bounds, { padding: 60, maxZoom: 14, duration: 500 });
+    }
   }
+  lastSelection = selectedDevice;
 }
 
 function applyMapTheme() {

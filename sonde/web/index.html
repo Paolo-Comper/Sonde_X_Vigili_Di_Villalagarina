@@ -42,14 +42,6 @@
         <select id="deviceSelect"></select>
       </div>
       <div class="control-group">
-        <label>Tipo:</label>
-        <select id="kindSelect">
-          <option value="all">Tutti</option>
-          <option value="livello">Livello idrico</option>
-          <option value="aria">Qualit&agrave; aria</option>
-        </select>
-      </div>
-      <div class="control-group">
         <label>Stato:</label>
         <span id="connectionStatus" class="status-indicator disconnected">Connessione...</span>
       </div>
@@ -71,7 +63,7 @@
     <div id="currentValues" class="gauge-grid"></div>
   </section>
 
-  <section class="chart-grid">
+  <section class="chart-grid" id="chartsSection">
     <div class="panel chart-container">
       <h3>Livello idrico (cm)</h3>
       <canvas id="chartLevel"></canvas>
@@ -113,7 +105,6 @@
           <tr>
             <th>Ora</th>
             <th>Dispositivo</th>
-            <th>Tipo</th>
             <th>Livello</th>
             <th>PM1</th>
             <th>PM2.5</th>

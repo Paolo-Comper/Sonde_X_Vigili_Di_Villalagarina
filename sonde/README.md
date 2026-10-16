@@ -138,8 +138,11 @@ con SQL.
 ## Dashboard
 
 - riepilogo dispositivi / misure / esportate / in attesa;
-- selezione del dispositivo (o "tutti") e filtro per tipo (livello/aria);
-- valori correnti, grafici storici e mappa delle posizioni;
+- selezione del dispositivo (o "tutti"): non c'e' distinzione di tipo, ogni
+  sonda mostra le grandezze che effettivamente invia;
+- valori correnti e mappa delle posizioni; con "tutti" si vede la mappa
+  d'insieme, con un dispositivo specifico compaiono i grafici storici e la
+  mappa evidenzia la sonda selezionata;
 - tabella delle ultime misure;
 - aggiornamento live via **Server-Sent Events**;
 - tema chiaro/scuro.

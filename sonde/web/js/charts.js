@@ -82,10 +82,14 @@ function setChart(chart, labels, series) {
 function updateCharts() {
   if (!allCharts.length) return;
 
-  const enabled = selectedDevice !== ALL;
-  document.querySelectorAll('.chart-container').forEach(c => c.classList.toggle('disabled', !enabled));
+  // Con "Tutti" si usa la mappa; i grafici servono per il singolo dispositivo.
+  const section = $('chartsSection');
+  const show = selectedDevice !== ALL;
+  if (section) section.hidden = !show;
+  if (!show) return;
 
-  const pts = enabled ? readings.slice(-50) : [];
+  allCharts.forEach(c => c.resize());
+  const pts = visibleReadings().slice(-100);
   const labels = pts.map(r => fmtTimeShort(r.ts));
 
   setChart(chartLevel, labels, [

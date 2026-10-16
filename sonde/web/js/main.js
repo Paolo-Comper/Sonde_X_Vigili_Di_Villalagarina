@@ -42,23 +42,12 @@ async function onDeviceChange() {
   render();
 }
 
-async function onKindChange() {
-  selectedKind = $('kindSelect').value;
-  const list = visibleDevices();
-  if (selectedDevice !== ALL && !list.some(d => d.id === selectedDevice)) {
-    selectedDevice = ALL;
-  }
-  await loadReadings();
-  render();
-}
-
 function init() {
   initCharts();
   initMap();
   initExportUI();
 
   $('deviceSelect').addEventListener('change', onDeviceChange);
-  $('kindSelect').addEventListener('change', onKindChange);
 
   refreshAll()
     .then(connectSSE)

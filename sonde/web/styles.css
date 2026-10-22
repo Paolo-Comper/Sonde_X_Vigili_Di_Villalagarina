@@ -44,9 +44,9 @@ body {
 }
 
 header {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
-  justify-content: space-between;
   gap: 16px;
   padding: 14px 22px;
   background: var(--panel);
@@ -56,14 +56,15 @@ header {
   z-index: 20;
 }
 
-.brand { display: flex; align-items: center; gap: 14px; }
-.header-actions { display: flex; align-items: center; gap: 14px; }
+.brand { display: flex; align-items: center; gap: 14px; justify-self: start; }
+.header-actions { display: flex; align-items: center; gap: 14px; justify-self: end; }
 .logo { height: 130px; width: auto; }
 .logo-school { height: 110px; background: #fff; border-radius: 8px; padding: 3px 8px; }
 /* In tema scuro il logo VVF sta su campo bianco, come quello del Marconi. */
 [data-theme="dark"] .logo-vvf { background: #fff; border-radius: 8px; padding: 3px; }
-.title h1 { margin: 0; font-size: 22px; letter-spacing: 0.5px; }
-.subtitle { margin: 2px 0 0; color: var(--muted); font-size: 12px; }
+.title { text-align: center; }
+.title h1 { margin: 0; font-size: 42px; letter-spacing: 1px; }
+.subtitle { margin: 4px 0 0; color: var(--muted); font-size: 18px; }
 
 main { padding: 18px; display: flex; flex-direction: column; gap: 16px; max-width: 1400px; margin: 0 auto; }
 
@@ -177,6 +178,8 @@ tr.exported td { background: rgba(46, 204, 113, 0.08); }
 .preview-result { overflow-x: auto; margin-top: 10px; }
 
 @media (max-width: 640px) {
+  header { grid-template-columns: auto 1fr auto; gap: 8px; padding: 10px 12px; }
   .logo { height: 100px; }
-  .title h1 { font-size: 18px; }
+  .title h1 { font-size: 28px; }
+  .subtitle { font-size: 14px; }
 }

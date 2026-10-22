@@ -58,8 +58,8 @@ header {
 
 .brand { display: flex; align-items: center; gap: 14px; }
 .header-actions { display: flex; align-items: center; gap: 14px; }
-.logo { height: 52px; width: auto; }
-.logo-school { height: 44px; background: #fff; border-radius: 8px; padding: 3px 8px; }
+.logo { height: 130px; width: auto; }
+.logo-school { height: 110px; background: #fff; border-radius: 8px; padding: 3px 8px; }
 /* In tema scuro il logo VVF sta su campo bianco, come quello del Marconi. */
 [data-theme="dark"] .logo-vvf { background: #fff; border-radius: 8px; padding: 3px; }
 .title h1 { margin: 0; font-size: 22px; letter-spacing: 0.5px; }
@@ -177,6 +177,6 @@ tr.exported td { background: rgba(46, 204, 113, 0.08); }
 .preview-result { overflow-x: auto; margin-top: 10px; }
 
 @media (max-width: 640px) {
-  .logo { height: 40px; }
+  .logo { height: 100px; }
   .title h1 { font-size: 18px; }
 }

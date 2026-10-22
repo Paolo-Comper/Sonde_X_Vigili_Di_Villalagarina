@@ -222,6 +222,7 @@ tr.exported td { background: rgba(46, 204, 113, 0.08); }
 .topology-row select { width: 100%; }
 .topology-arrow { color: var(--accent); font-weight: 700; }
 .topology-empty { color: var(--muted); font-size: 13px; text-align: center; padding: 16px; }
+.topology-actions { margin-top: 14px; }
 
 @media (max-width: 640px) {
   header { grid-template-columns: auto 1fr auto; gap: 8px; padding: 10px 12px; }

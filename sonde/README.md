@@ -154,8 +154,9 @@ con SQL.
 
 ## Collegamenti di affluenza (`topology.json`)
 
-La rete idrica si descrive con un file JSON (default `topology.json`, di norma
-incorporato nel binario come default):
+La rete idrica si descrive con un file JSON (default `topology.json`). Il
+default e' **incorporato nel binario**: all'avvio, se il file non esiste nella
+cartella di lavoro, viene creato automaticamente con quel contenuto.
 
 ```json
 {
@@ -172,6 +173,10 @@ incorporato nel binario come default):
   grafo come nodo.
 - Nella vista "tutti" la mappa disegna le frecce delle affluenze e compare il
   **grafo** della rete; con un dispositivo selezionato le frecce sono nascoste.
+- Il pulsante **Modifica affluenze** (sopra mappa e grafo) apre un editor
+  grafico: si scelgono sonda a monte e a valle, si aggiungono/rimuovono
+  collegamenti e si salva. Il file viene riscritto in modo atomico e tutti i
+  client collegati si aggiornano via SSE.
 
 ## Esportazione
 
@@ -196,6 +201,7 @@ scrittura non puo' modificare il database.
 | GET | `/api/readings?device=&limit=` | Misure recenti |
 | GET | `/api/stats` | Contatori aggregati |
 | GET | `/api/topology` | Collegamenti di affluenza configurati |
+| PUT | `/api/topology` | Salva i collegamenti (`{"links":[{"from":"A","to":"B"}]}`) |
 | GET | `/api/schema` | Colonne della tabella `measurements` |
 | GET | `/api/query?sql=&limit=` | Anteprima di una `SELECT` |
 | GET | `/api/export?format=csv\|json\|zip&mark=0\|1&sql=` | Download |

@@ -177,6 +177,52 @@ tr.exported td { background: rgba(46, 204, 113, 0.08); }
 .export-message.ok { color: var(--ok); }
 .preview-result { overflow-x: auto; margin-top: 10px; }
 
+/* Popup MapLibre leggibile anche in tema scuro. */
+.sonde-popup .maplibregl-popup-content {
+  background: var(--panel);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: var(--shadow);
+  padding: 10px 14px;
+  font-size: 13px;
+  line-height: 1.45;
+}
+.sonde-popup .maplibregl-popup-content strong { color: var(--text); }
+.sonde-popup .maplibregl-popup-close-button { color: var(--muted); font-size: 16px; padding: 0 5px; }
+.sonde-popup.maplibregl-popup-anchor-top .maplibregl-popup-tip { border-bottom-color: var(--panel); }
+.sonde-popup.maplibregl-popup-anchor-bottom .maplibregl-popup-tip { border-top-color: var(--panel); }
+.sonde-popup.maplibregl-popup-anchor-left .maplibregl-popup-tip { border-right-color: var(--panel); }
+.sonde-popup.maplibregl-popup-anchor-right .maplibregl-popup-tip { border-left-color: var(--panel); }
+
+/* Grafo delle affluenze in stile flowchart. */
+.graph-scroll { overflow-x: auto; }
+.graph-svg { color: var(--text); width: 100%; height: auto; }
+.flow-node rect { fill: var(--panel); stroke: var(--border); stroke-width: 1.5; transition: stroke .15s; }
+.flow-node:hover rect { stroke: var(--accent); }
+.flow-dot { fill: var(--accent); }
+.flow-title { fill: var(--text); font-size: 13px; font-weight: 600; }
+.flow-value { fill: var(--muted); font-size: 12px; }
+.flow-edge { fill: none; stroke: var(--accent); stroke-width: 1.8; stroke-opacity: .7; }
+.graph-svg marker path { fill: var(--accent); }
+
+/* Editor delle affluenze. */
+.btn-small { padding: 5px 10px; font-size: 12px; }
+.topology-rows { display: flex; flex-direction: column; gap: 10px; margin: 14px 0; }
+.topology-row {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr auto;
+  gap: 10px;
+  align-items: center;
+  padding: 10px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+.topology-row select { width: 100%; }
+.topology-arrow { color: var(--accent); font-weight: 700; }
+.topology-empty { color: var(--muted); font-size: 13px; text-align: center; padding: 16px; }
+
 @media (max-width: 640px) {
   header { grid-template-columns: auto 1fr auto; gap: 8px; padding: 10px 12px; }
   .logo { height: 100px; }

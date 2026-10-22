@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -28,7 +29,8 @@ func newTestServer(t *testing.T) (*Server, *store.Store) {
 	t.Cleanup(func() { s.Close() })
 
 	h := hub.New()
-	srv := New(s, h, topology.Topology{}, fstest.MapFS{}, log.New(io.Discard, "", 0))
+	topoPath := filepath.Join(t.TempDir(), "topology.json")
+	srv := New(s, h, topology.Topology{}, topoPath, fstest.MapFS{}, log.New(io.Discard, "", 0))
 
 	cm := 123.45
 	lat := 45.915771
@@ -140,6 +142,46 @@ func TestExportZIP(t *testing.T) {
 	}
 	if len(body) < 4 || string(body[:2]) != "PK" {
 		t.Errorf("not a zip archive")
+	}
+}
+
+func TestTopologyUpdatePersists(t *testing.T) {
+	srv, _ := newTestServer(t)
+
+	body := `{"links":[{"from":"Rio Molini 0","to":"Rio Piazzo 0"}]}`
+	req := httptest.NewRequest(http.MethodPut, "/api/topology", strings.NewReader(body))
+	rec := httptest.NewRecorder()
+	srv.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("PUT status = %d body=%s", rec.Code, rec.Body.String())
+	}
+
+	if len(srv.topo.Links) != 1 || srv.topo.Links[0].To != "Rio Piazzo 0" {
+		t.Fatalf("topologia in memoria = %+v", srv.topo)
+	}
+	data, err := os.ReadFile(srv.topoPath)
+	if err != nil {
+		t.Fatalf("file topologia: %v", err)
+	}
+	if !strings.Contains(string(data), "Rio Piazzo 0") {
+		t.Errorf("file topologia = %s", data)
+	}
+
+	res, out := do(t, srv, "/api/topology")
+	if res.StatusCode != http.StatusOK {
+		t.Fatalf("GET status = %d", res.StatusCode)
+	}
+	if !strings.Contains(string(out), "Rio Piazzo 0") {
+		t.Errorf("GET topologia = %s", out)
+	}
+
+	// Autocollegamento rifiutato.
+	bad := `{"links":[{"from":"A","to":"A"}]}`
+	req = httptest.NewRequest(http.MethodPut, "/api/topology", strings.NewReader(bad))
+	rec = httptest.NewRecorder()
+	srv.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusBadRequest {
+		t.Errorf("PUT autocollegamento status = %d, want 400", rec.Code)
 	}
 }
 

@@ -26,7 +26,7 @@ async function loadStats() {
 
 async function loadTopology() {
   const out = await fetchJSON('/api/topology');
-  topology = { nodes: out.nodes || [], links: out.links || [] };
+  topology = { links: out.links || [] };
 }
 
 async function loadReadings() {
@@ -62,6 +62,15 @@ function connectSSE() {
   });
   sse.addEventListener('exported', () => {
     loadStats().then(scheduleRender).catch(() => {});
+  });
+  sse.addEventListener('topology', e => {
+    try {
+      const t = JSON.parse(e.data);
+      topology = { links: t.links || [] };
+      scheduleRender();
+    } catch (err) {
+      console.warn(err);
+    }
   });
 }
 

@@ -69,13 +69,16 @@ func main() {
 	}
 	defer st.Close()
 
-	topo, err := topology.Load(cfg.topology, defaultTopology)
+	topo, created, err := topology.LoadOrCreate(cfg.topology, defaultTopology)
 	if err != nil {
 		logger.Fatalf("topology: %v", err)
 	}
+	if created {
+		logger.Printf("topology: creato %s dal default incorporato", cfg.topology)
+	}
 
 	h := hub.New()
-	server := api.New(st, h, topo, webFS, logger)
+	server := api.New(st, h, topo, cfg.topology, webFS, logger)
 
 	listener, err := listen(cfg.port)
 	if err != nil {
@@ -222,6 +225,7 @@ func printBanner(cfg config, url string) {
 	fmt.Printf("   Dashboard : %s\n", url)
 	fmt.Printf("   Broker    : %s   topic: %s\n", cfg.broker, cfg.topic)
 	fmt.Printf("   Database  : %s\n", cfg.dbPath)
+	fmt.Printf("   Topologia : %s\n", cfg.topology)
 	if cfg.test {
 		fmt.Printf("   Test      : attivo (root %s, intervallo %s)\n", cfg.testRoot, cfg.interval)
 	}

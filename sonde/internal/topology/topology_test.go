@@ -1,6 +1,8 @@
 package topology
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 )
 
@@ -59,5 +61,45 @@ func TestLoadFallback(t *testing.T) {
 	}
 	if len(topo.Links) != 1 {
 		t.Fatalf("atteso il fallback incorporato, ottenuto: %+v", topo)
+	}
+}
+
+func TestLoadOrCreate(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "sottocartella", "topology.json")
+	fallback := []byte(`{"links": [{"from": "A", "to": "B"}]}`)
+
+	topo, created, err := LoadOrCreate(path, fallback)
+	if err != nil {
+		t.Fatalf("LoadOrCreate: %v", err)
+	}
+	if !created {
+		t.Fatal("atteso created=true al primo avvio")
+	}
+	if len(topo.Links) != 1 {
+		t.Fatalf("link inattesi: %+v", topo.Links)
+	}
+	if _, err := os.Stat(path); err != nil {
+		t.Fatalf("file non creato: %v", err)
+	}
+
+	if err := Save(path, Topology{Links: []Link{{From: "C", To: "D"}}}); err != nil {
+		t.Fatalf("Save: %v", err)
+	}
+	topo, created, err = LoadOrCreate(path, fallback)
+	if err != nil {
+		t.Fatalf("LoadOrCreate (2): %v", err)
+	}
+	if created {
+		t.Error("atteso created=false su file esistente")
+	}
+	if len(topo.Links) != 1 || topo.Links[0].From != "C" {
+		t.Fatalf("il file esistente deve avere precedenza: %+v", topo.Links)
+	}
+}
+
+func TestLoadOrCreateInvalidFallback(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "topology.json")
+	if _, _, err := LoadOrCreate(path, []byte("{")); err == nil {
+		t.Fatal("atteso errore con fallback non valido")
 	}
 }

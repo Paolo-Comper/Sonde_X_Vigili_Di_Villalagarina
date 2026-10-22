@@ -6,11 +6,13 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/fs"
 	"log"
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"sonde/internal/export"
@@ -21,16 +23,19 @@ import (
 
 // Server raggruppa le dipendenze degli handler HTTP.
 type Server struct {
-	store *store.Store
-	hub   *hub.Hub
-	topo  topology.Topology
-	web   fs.FS
-	log   *log.Logger
+	store    *store.Store
+	hub      *hub.Hub
+	topo     topology.Topology
+	topoPath string
+	topoMu   sync.RWMutex
+	web      fs.FS
+	log      *log.Logger
 }
 
-// New crea il server HTTP.
-func New(s *store.Store, h *hub.Hub, topo topology.Topology, web fs.FS, logger *log.Logger) *Server {
-	return &Server{store: s, hub: h, topo: topo, web: web, log: logger}
+// New crea il server HTTP. topoPath e' il file su cui salvare le modifiche
+// alla topologia (vuoto = solo in memoria).
+func New(s *store.Store, h *hub.Hub, topo topology.Topology, topoPath string, web fs.FS, logger *log.Logger) *Server {
+	return &Server{store: s, hub: h, topo: topo, topoPath: topoPath, web: web, log: logger}
 }
 
 // Handler costruisce il router.
@@ -100,9 +105,66 @@ func (s *Server) handleStats(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, st)
 }
 
-// handleTopology restituisce i collegamenti di affluenza configurati.
+// handleTopology legge o aggiorna i collegamenti di affluenza configurati.
 func (s *Server) handleTopology(w http.ResponseWriter, r *http.Request) {
-	writeJSON(w, http.StatusOK, s.topo)
+	switch r.Method {
+	case http.MethodGet:
+		s.topoMu.RLock()
+		t := s.topo
+		s.topoMu.RUnlock()
+		writeJSON(w, http.StatusOK, t)
+	case http.MethodPut, http.MethodPost:
+		s.updateTopology(w, r)
+	default:
+		w.Header().Set("Allow", "GET, PUT")
+		writeError(w, http.StatusMethodNotAllowed, fmt.Errorf("metodo non consentito"))
+	}
+}
+
+func (s *Server) updateTopology(w http.ResponseWriter, r *http.Request) {
+	var t topology.Topology
+	if err := json.NewDecoder(io.LimitReader(r.Body, 1<<20)).Decode(&t); err != nil {
+		writeError(w, http.StatusBadRequest, fmt.Errorf("JSON non valido: %w", err))
+		return
+	}
+
+	links := make([]topology.Link, 0, len(t.Links))
+	seen := make(map[string]bool, len(t.Links))
+	for _, l := range t.Links {
+		l.From = strings.TrimSpace(l.From)
+		l.To = strings.TrimSpace(l.To)
+		if l.From == "" || l.To == "" {
+			writeError(w, http.StatusBadRequest, fmt.Errorf("ogni collegamento deve avere 'from' e 'to'"))
+			return
+		}
+		if strings.EqualFold(l.From, l.To) {
+			writeError(w, http.StatusBadRequest, fmt.Errorf("una sonda non puo' collegarsi a se stessa (%s)", l.From))
+			return
+		}
+		key := strings.ToLower(l.From) + "\x00" + strings.ToLower(l.To)
+		if seen[key] {
+			continue
+		}
+		seen[key] = true
+		links = append(links, l)
+	}
+	t.Links = links
+
+	if s.topoPath != "" {
+		if err := topology.Save(s.topoPath, t); err != nil {
+			writeError(w, http.StatusInternalServerError, fmt.Errorf("salvataggio topologia: %w", err))
+			return
+		}
+	}
+
+	s.topoMu.Lock()
+	s.topo = t
+	s.topoMu.Unlock()
+
+	if data, err := json.Marshal(t); err == nil {
+		s.hub.Broadcast("topology", data)
+	}
+	writeJSON(w, http.StatusOK, t)
 }
 
 func (s *Server) handleSchema(w http.ResponseWriter, r *http.Request) {

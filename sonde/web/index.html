@@ -26,8 +26,8 @@
     <img src="res/vvf.png" alt="Vigili del Fuoco" class="logo logo-vvf">
   </div>
   <div class="title">
-    <h1>sonde</h1>
-    <p class="subtitle">Monitoraggio livelli idrici e qualit&agrave; dell'aria</p>
+    <h1>ARGINE</h1>
+    <p class="subtitle"><strong>A</strong>nalisi <strong>R</strong>emota per la <strong>G</strong>estione di eventi <strong>I</strong>drici <strong>E</strong>stremi</p>
   </div>
   <div class="header-actions">
     <button id="themeToggle" class="btn btn-ghost" type="button">Notte</button>
@@ -88,12 +88,18 @@
   </section>
 
   <section class="panel map-panel">
-    <h3>Mappa dispositivi</h3>
+    <div class="panel-row between">
+      <h3>Mappa dispositivi</h3>
+      <button class="btn btn-ghost btn-small topology-edit" type="button">Modifica affluenze</button>
+    </div>
     <div id="map"></div>
   </section>
 
   <section class="panel graph-panel" id="graphSection" hidden>
-    <h3>Grafo affluenze</h3>
+    <div class="panel-row between">
+      <h3>Grafo affluenze</h3>
+      <button class="btn btn-ghost btn-small topology-edit" type="button">Modifica</button>
+    </div>
     <div id="graphContainer"></div>
   </section>
 
@@ -169,6 +175,28 @@
   </div>
 </div>
 
+<div id="topologyOverlay" class="overlay" hidden>
+  <div class="modal">
+    <div class="panel-row between">
+      <h3>Affluenze tra sonde</h3>
+      <button id="topologyClose" class="btn btn-ghost" type="button">&#10005;</button>
+    </div>
+    <p class="muted">
+      Ogni collegamento va da una sonda a monte a una a valle. Le frecce compaiono
+      sulla mappa e nel grafo; i riferimenti a punti senza sonda vengono ignorati.
+    </p>
+    <div id="topologyRows" class="topology-rows"></div>
+    <div class="panel-row">
+      <button id="topologyAdd" class="btn" type="button">+ Aggiungi collegamento</button>
+    </div>
+    <div class="panel-row">
+      <button id="topologySave" class="btn btn-primary" type="button">Salva</button>
+      <button id="topologyCancel" class="btn btn-ghost" type="button">Annulla</button>
+    </div>
+    <div id="topologyMessage" class="export-message"></div>
+  </div>
+</div>
+
 <script src="js/util.js"></script>
 <script src="js/state.js"></script>
 <script src="js/theme.js"></script>
@@ -178,6 +206,7 @@
 <script src="js/graph.js"></script>
 <script src="js/table.js"></script>
 <script src="js/export.js"></script>
+<script src="js/topology-editor.js"></script>
 <script src="js/main.js"></script>
 </body>
 </html>

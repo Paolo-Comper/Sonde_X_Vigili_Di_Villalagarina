@@ -3,6 +3,8 @@
 let sondeMap = null;
 let mapFitted = false;
 let lastSelection = null;
+let mapDirty = false;
+let deviceEventsBound = false;
 
 const MAP_STYLES = {
   light: 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
@@ -158,26 +160,12 @@ function updateLinks() {
   });
 }
 
-function addMapLayers() {
-  if (!sondeMap) return;
-  // I collegamenti stanno sotto ai marker dei dispositivi.
-  addLinkLayers();
-  if (sondeMap.getSource('devices')) return;
+function bindDeviceEvents() {
+  if (deviceEventsBound || !sondeMap) return;
+  deviceEventsBound = true;
 
-  sondeMap.addSource('devices', { type: 'geojson', data: emptyFC() });
-  sondeMap.addLayer({
-    id: 'devices',
-    type: 'circle',
-    source: 'devices',
-    paint: {
-      'circle-radius': ['case', ['get', 'selected'], 13, 8],
-      'circle-color': ['case', ['get', 'selected'], '#e74c3c', '#2f7fd6'],
-      'circle-stroke-width': ['case', ['get', 'selected'], 3, 2],
-      'circle-stroke-color': '#ffffff',
-      'circle-opacity': ['case', ['get', 'selected'], 1, 0.85]
-    }
-  });
   sondeMap.on('click', 'devices', e => {
+    if (!e.features || e.features.length === 0) return;
     const p = e.features[0].properties;
     const lines = ['<strong>' + escapeHtml(p.label) + '</strong>'];
     if (p.level !== null && p.level !== undefined) lines.push('Livello: ' + fmt(p.level, 1) + ' cm');
@@ -186,16 +174,51 @@ function addMapLayers() {
     if (p.hum !== null && p.hum !== undefined) lines.push('Umidità: ' + fmt(p.hum, 0) + ' %');
     if (p.press !== null && p.press !== undefined) lines.push('Pressione: ' + fmt(p.press, 1) + ' hPa');
     if (p.ts) lines.push('Ora: ' + escapeHtml(fmtTime(p.ts)));
-    new maplibregl.Popup().setLngLat(e.lngLat).setHTML(lines.join('<br>')).addTo(sondeMap);
+    new maplibregl.Popup({ className: 'sonde-popup', maxWidth: '300px' })
+      .setLngLat(e.lngLat)
+      .setHTML(lines.join('<br>'))
+      .addTo(sondeMap);
   });
   sondeMap.on('mouseenter', 'devices', () => { sondeMap.getCanvas().style.cursor = 'pointer'; });
   sondeMap.on('mouseleave', 'devices', () => { sondeMap.getCanvas().style.cursor = ''; });
 }
 
+// Assicura che sorgenti e layer esistano anche dopo un setStyle (tema).
+function ensureMapLayers() {
+  if (!sondeMap || !sondeMap.isStyleLoaded()) return false;
+  // I collegamenti stanno sotto ai marker dei dispositivi.
+  addLinkLayers();
+  if (!sondeMap.getSource('devices')) {
+    sondeMap.addSource('devices', { type: 'geojson', data: emptyFC() });
+    sondeMap.addLayer({
+      id: 'devices',
+      type: 'circle',
+      source: 'devices',
+      paint: {
+        'circle-radius': ['case', ['get', 'selected'], 13, 8],
+        'circle-color': ['case', ['get', 'selected'], '#e74c3c', '#2f7fd6'],
+        'circle-stroke-width': ['case', ['get', 'selected'], 3, 2],
+        'circle-stroke-color': '#ffffff',
+        'circle-opacity': ['case', ['get', 'selected'], 1, 0.85]
+      }
+    });
+  }
+  bindDeviceEvents();
+  return true;
+}
+
+function addMapLayers() {
+  if (!ensureMapLayers()) { mapDirty = true; return; }
+  updateMap();
+}
+
 function updateMap() {
   if (!sondeMap) return;
+  if (!ensureMapLayers()) { mapDirty = true; return; }
+  mapDirty = false;
+
   const src = sondeMap.getSource('devices');
-  if (!src) return;
+  if (!src) { mapDirty = true; return; }
 
   const fc = deviceFeatures();
   src.setData(fc);
@@ -225,7 +248,10 @@ function updateMap() {
 }
 
 function applyMapTheme() {
-  if (sondeMap) sondeMap.setStyle(mapStyle());
+  if (!sondeMap) return;
+  // setStyle rimuove sorgenti e layer: style.load li ricrea e riapplica i dati.
+  mapDirty = true;
+  sondeMap.setStyle(mapStyle());
 }
 
 function initMap() {
@@ -245,4 +271,21 @@ function initMap() {
   sondeMap.addControl(new maplibregl.NavigationControl(), 'top-right');
   sondeMap.on('load', addMapLayers);
   sondeMap.on('style.load', addMapLayers);
+  // Se un aggiornamento arriva mentre lo stile non e' pronto, lo si applica qui.
+  sondeMap.on('idle', () => { if (mapDirty) updateMap(); });
+
+  if (typeof ResizeObserver !== 'undefined') {
+    const observer = new ResizeObserver(() => { if (sondeMap) sondeMap.resize(); });
+    observer.observe(container);
+  }
+  window.addEventListener('resize', () => { if (sondeMap) sondeMap.resize(); });
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden || !sondeMap) return;
+    // Il canvas puo' aver perso le dimensioni mentre la scheda era nascosta.
+    setTimeout(() => {
+      if (!sondeMap) return;
+      sondeMap.resize();
+      updateMap();
+    }, 80);
+  });
 }

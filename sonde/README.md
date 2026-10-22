@@ -9,7 +9,8 @@ Villalagarina. Un solo binario Go che:
 - serve una **dashboard web** incorporata (nessun file esterno da copiare);
 - disegna sulla mappa i **collegamenti di affluenza** tra le sonde (frecce) e
   ne mostra il **grafo**;
-- esporta i dati in **CSV/JSON** con query SQL personalizzabile.
+- esporta i dati in **CSV/JSON** con query SQL personalizzabile;
+- permette di configurare **broker, prefisso del topic e dispositivi** direttamente dalla dashboard, senza riavviare.
 
 Il progetto nasce come evoluzione di
 [mimosa-dashboard](https://github.com/Paolo-Comper/mimosa-dashboard), ma
@@ -27,7 +28,10 @@ qualita' dell'aria, senza distinzione di tipo.
 go build -o sonde .
 ```
 
-Il binario e' **autosufficiente**: gli asset web sono inclusi con `go:embed`.
+Il binario e' **autosufficiente**: gli asset web (comprese le librerie
+Chart.js e MapLibre in `web/vendor/`) sono inclusi con `go:embed`. La mappa
+carica solo le tessere cartografiche da CartoCDN: senza rete restano visibili
+dati, grafici e marker, ma non lo sfondo geografico.
 
 ## Avvio
 
@@ -61,6 +65,7 @@ collega, utile per provare la dashboard end-to-end.
 | `--client-id` | casuale | Client id MQTT |
 | `--username` / `--password` | vuoto | Credenziali MQTT |
 | `--db` | `sonde.db` | Percorso del database SQLite |
+| `--settings` | `sonde-settings.json` | File delle impostazioni MQTT (credenziali incluse) |
 | `--topology` | `topology.json` | File dei collegamenti tra sonde (env `SONDE_TOPOLOGY`) |
 | `--port` | `8080` | Porta HTTP (sovrascrivibile con la variabile d'ambiente `PORT`) |
 | `--dev` | off | Serve la dashboard leggendo i file da disco (utile in sviluppo) |
@@ -76,6 +81,24 @@ La porta si puo' impostare anche cosi':
 ```bash
 PORT=9000 ./sonde
 ```
+
+## Configurazione dalla dashboard
+
+Nel pannello in alto si possono cambiare senza riavviare:
+
+- **Prefisso topic** (es. `421342415`): l'app si sottoscrive a
+  `{prefisso}/#`. Si puo' inserire anche un filtro completo con `+` o `#`;
+- **Broker MQTT**, **utente** e **password** (vuota = mantiene quella salvata,
+  spunta "rimuovi" per cancellarla);
+- **+ Dispositivo**: registra una sonda prima ancora che invii dati, con ID
+  (segmento del topic), nome visualizzato e coordinate opzionali. Compare
+  subito nell'elenco, sulla mappa e nel grafo.
+
+Il pulsante **Applica** salva e riconnette subito il client MQTT. Le
+impostazioni finiscono in `sonde-settings.json` (permessi `0600`), separato dal
+database: la console SQL puo' interrogare solo le tabelle delle misure e non
+puo' leggere la password del broker. I flag da riga di comando, se indicati
+esplicitamente, hanno la precedenza sul file.
 
 ## Topic e payload unificato
 
@@ -197,6 +220,9 @@ scrittura non puo' modificare il database.
 | Metodo | Percorso | Descrizione |
 |--------|----------|-------------|
 | GET | `/api/devices` | Elenco dispositivi |
+| POST | `/api/devices` | Aggiunge/aggiorna un dispositivo (`{"id","label","lat","lon"}`) |
+| GET | `/api/settings` | Configurazione MQTT e stato della connessione |
+| PUT | `/api/settings` | Salva e riconnette (`{"broker","prefix","username","password"}`) |
 | GET | `/api/latest` | Ultima misura per dispositivo |
 | GET | `/api/readings?device=&limit=` | Misure recenti |
 | GET | `/api/stats` | Contatori aggregati |
@@ -231,7 +257,8 @@ sonde/
     store/                    SQLite (devices, measurements)
     export/                   CSV/JSON/ZIP + validazione SQL
     hub/                      fan-out SSE
-    broker/                   client MQTT (paho)
+    broker/                   client MQTT (paho) e riconnessione a caldo
+    config/                   impostazioni MQTT (sonde-settings.json)
     ingest/                   MQTT -> store -> SSE
     api/                      API HTTP e dashboard
     sim/                      simulatore --test

@@ -33,7 +33,9 @@ function render() {
 }
 
 async function refreshAll() {
-  await Promise.all([loadDevices(), loadStats(), loadReadings(), loadLatest(), loadTopology()]);
+  await Promise.all([
+    loadDevices(), loadStats(), loadReadings(), loadLatest(), loadTopology(), loadSettings()
+  ]);
   render();
 }
 

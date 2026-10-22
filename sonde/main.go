@@ -20,6 +20,7 @@ import (
 
 	"sonde/internal/api"
 	"sonde/internal/broker"
+	appconf "sonde/internal/config"
 	"sonde/internal/hub"
 	"sonde/internal/ingest"
 	"sonde/internal/sim"
@@ -38,6 +39,7 @@ type config struct {
 	topic     string
 	clientID  string
 	dbPath    string
+	settings  string
 	topology  string
 	port      int
 	dev       bool
@@ -51,6 +53,8 @@ type config struct {
 
 	username string
 	password string
+
+	explicit map[string]bool
 }
 
 func main() {
@@ -77,29 +81,24 @@ func main() {
 		logger.Printf("topology: creato %s dal default incorporato", cfg.topology)
 	}
 
+	mqttCfg := loadMQTTConfig(cfg, logger)
+
 	h := hub.New()
-	server := api.New(st, h, topo, cfg.topology, webFS, logger)
+	ingestor := ingest.New(st, h, logger)
+	mqttMgr := broker.NewManager(ingestor.Handle, logger)
+	if !cfg.noMQTT {
+		if err := mqttMgr.Apply(brokerConfig(cfg, mqttCfg)); err != nil {
+			logger.Printf("MQTT non connesso (%v): la dashboard resta attiva", err)
+		}
+	}
+
+	server := api.New(st, h, topo, cfg.topology, cfg.settings, mqttCfg, mqttMgr, webFS, logger)
 
 	listener, err := listen(cfg.port)
 	if err != nil {
 		logger.Fatalf("listen: %v", err)
 	}
 	httpSrv := &http.Server{Handler: server.Handler()}
-
-	var brk *broker.Broker
-	if !cfg.noMQTT {
-		ingestor := ingest.New(st, h, logger)
-		brk, err = broker.Start(broker.Config{
-			URL:      "tcp://" + cfg.broker,
-			ClientID: cfg.clientID,
-			Topic:    cfg.topic,
-			Username: cfg.username,
-			Password: cfg.password,
-		}, ingestor.Handle)
-		if err != nil {
-			logger.Printf("MQTT non connesso (%v): la dashboard resta attiva", err)
-		}
-	}
 
 	go func() {
 		if err := httpSrv.Serve(listener); err != nil && err != http.ErrServerClosed {
@@ -108,8 +107,11 @@ func main() {
 	}()
 
 	if cfg.test {
+		if !cfg.explicit["test-root"] && mqttCfg.Group() != "" {
+			cfg.testRoot = mqttCfg.Group()
+		}
 		opts := sim.Options{
-			Broker:   cfg.broker,
+			Broker:   mqttCfg.Broker,
 			Root:     cfg.testRoot,
 			Interval: cfg.interval,
 			Count:    cfg.count,
@@ -122,7 +124,7 @@ func main() {
 	}
 
 	url := fmt.Sprintf("http://localhost:%d", cfg.port)
-	printBanner(cfg, url)
+	printBanner(cfg, url, mqttCfg)
 	if !cfg.noBrowser {
 		go func() {
 			time.Sleep(400 * time.Millisecond)
@@ -135,9 +137,7 @@ func main() {
 	<-sig
 
 	fmt.Println("\n  Arresto in corso...")
-	if brk != nil {
-		brk.Stop()
-	}
+	mqttMgr.Stop()
 	_ = httpSrv.Close()
 }
 
@@ -154,6 +154,7 @@ func parseFlags() config {
 	flag.StringVar(&cfg.topic, "topic", "421342415/#", "filtro topic MQTT da sottoscrivere")
 	flag.StringVar(&cfg.clientID, "client-id", "", "client id MQTT (default casuale)")
 	flag.StringVar(&cfg.dbPath, "db", "sonde.db", "percorso del database SQLite")
+	flag.StringVar(&cfg.settings, "settings", "sonde-settings.json", "file delle impostazioni MQTT (credenziali incluse)")
 	flag.StringVar(&cfg.topology, "topology", "topology.json", "file dei collegamenti tra sonde (env SONDE_TOPOLOGY)")
 	flag.IntVar(&cfg.port, "port", port, "porta HTTP (env PORT)")
 	flag.BoolVar(&cfg.dev, "dev", false, "serve la dashboard leggendo i file da disco")
@@ -174,6 +175,8 @@ func parseFlags() config {
 		flag.PrintDefaults()
 	}
 	flag.Parse()
+	cfg.explicit = make(map[string]bool)
+	flag.Visit(func(f *flag.Flag) { cfg.explicit[f.Name] = true })
 
 	if cfg.clientID == "" {
 		cfg.clientID = fmt.Sprintf("sonde-%d", time.Now().UnixNano())
@@ -182,6 +185,46 @@ func parseFlags() config {
 		cfg.topology = p
 	}
 	return cfg
+}
+
+// loadMQTTConfig combina flag, valori persistiti e default. I flag impostati
+// esplicitamente hanno la precedenza sulla configurazione salvata.
+func loadMQTTConfig(cfg config, logger *log.Logger) appconf.MQTT {
+	base := appconf.MQTT{
+		Broker:   cfg.broker,
+		Prefix:   appconf.PrefixFromTopic(cfg.topic),
+		Username: cfg.username,
+		Password: cfg.password,
+	}
+	if saved, ok, err := appconf.Load(cfg.settings); err != nil {
+		logger.Printf("impostazioni MQTT: %v", err)
+	} else if ok {
+		base = saved
+	}
+
+	if cfg.explicit["broker"] {
+		base.Broker = cfg.broker
+	}
+	if cfg.explicit["topic"] {
+		base.Prefix = appconf.PrefixFromTopic(cfg.topic)
+	}
+	if cfg.explicit["username"] {
+		base.Username = cfg.username
+	}
+	if cfg.explicit["password"] {
+		base.Password = cfg.password
+	}
+	return base.Normalized()
+}
+
+func brokerConfig(cfg config, mqttCfg appconf.MQTT) broker.Config {
+	return broker.Config{
+		URL:      mqttCfg.BrokerURL(),
+		ClientID: cfg.clientID,
+		Topic:    mqttCfg.Topic,
+		Username: mqttCfg.Username,
+		Password: mqttCfg.Password,
+	}
 }
 
 func resolveWebFS(dev bool) (fs.FS, error) {
@@ -217,14 +260,15 @@ func openBrowser(url string) {
 	_ = cmd.Start()
 }
 
-func printBanner(cfg config, url string) {
+func printBanner(cfg config, url string, mqttCfg appconf.MQTT) {
 	fmt.Println()
 	fmt.Println("  ============================================================")
 	fmt.Println("   sonde - monitoraggio sonde Vigili del Fuoco")
 	fmt.Println("  ============================================================")
 	fmt.Printf("   Dashboard : %s\n", url)
-	fmt.Printf("   Broker    : %s   topic: %s\n", cfg.broker, cfg.topic)
+	fmt.Printf("   Broker    : %s   topic: %s\n", mqttCfg.Broker, mqttCfg.Topic)
 	fmt.Printf("   Database  : %s\n", cfg.dbPath)
+	fmt.Printf("   Impostaz. : %s\n", cfg.settings)
 	fmt.Printf("   Topologia : %s\n", cfg.topology)
 	if cfg.test {
 		fmt.Printf("   Test      : attivo (root %s, intervallo %s)\n", cfg.testRoot, cfg.interval)

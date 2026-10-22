@@ -40,6 +40,48 @@ func levelReading() telemetry.Reading {
 	}
 }
 
+func TestUpsertDeviceKeepsManualLabelAndPosition(t *testing.T) {
+	s := newTestStore(t)
+
+	lat, lon := 45.9, 11.0
+	if err := s.UpsertDevice(Device{
+		ID: "Rio_Molini_0", Label: "Rio Molini 0", Group: "421342415",
+		Topic: "421342415/Rio_Molini_0", Lat: &lat, Lon: &lon,
+	}); err != nil {
+		t.Fatalf("UpsertDevice: %v", err)
+	}
+
+	// Una misura senza label e senza GPS non deve cancellare i dati manuali.
+	r := levelReading()
+	r.Label = r.DeviceID
+	r.Lat, r.Lon = nil, nil
+	if err := s.Insert(r); err != nil {
+		t.Fatalf("Insert: %v", err)
+	}
+
+	devices, err := s.ListDevices()
+	if err != nil || len(devices) != 1 {
+		t.Fatalf("ListDevices = %+v err:%v", devices, err)
+	}
+	d := devices[0]
+	if d.Label != "Rio Molini 0" {
+		t.Errorf("label manuale sovrascritta: %q", d.Label)
+	}
+	if d.Lat == nil || *d.Lat != lat || d.Lon == nil || *d.Lon != lon {
+		t.Errorf("posizione manuale persa: %+v", d)
+	}
+
+	// Una label esplicita nel payload invece aggiorna il nome.
+	r.Label = "Rio Molini nuovo"
+	if err := s.Insert(r); err != nil {
+		t.Fatalf("Insert: %v", err)
+	}
+	devices, _ = s.ListDevices()
+	if devices[0].Label != "Rio Molini nuovo" {
+		t.Errorf("label esplicita non applicata: %q", devices[0].Label)
+	}
+}
+
 func airReading() telemetry.Reading {
 	return telemetry.Reading{
 		DeviceID: "rpi-zero-1",

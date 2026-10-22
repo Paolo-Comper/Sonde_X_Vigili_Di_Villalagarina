@@ -72,6 +72,19 @@ function connectSSE() {
       console.warn(err);
     }
   });
+  sse.addEventListener('settings', e => {
+    try {
+      const out = JSON.parse(e.data);
+      mqttConfig = out.mqtt || mqttConfig;
+      mqttStatus = out.status || mqttStatus;
+      renderMQTT();
+    } catch (err) {
+      console.warn(err);
+    }
+  });
+  sse.addEventListener('devices', () => {
+    Promise.all([loadDevices(), loadStats()]).then(scheduleRender).catch(() => {});
+  });
 }
 
 function onLiveReading(m) {

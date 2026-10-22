@@ -15,27 +15,49 @@ import (
 	"sync"
 	"time"
 
+	"sonde/internal/broker"
+	"sonde/internal/config"
 	"sonde/internal/export"
 	"sonde/internal/hub"
 	"sonde/internal/store"
 	"sonde/internal/topology"
 )
 
+// MQTTController permette di riapplicare la configurazione a caldo.
+type MQTTController interface {
+	Apply(broker.Config) error
+	Status() broker.Status
+}
+
 // Server raggruppa le dipendenze degli handler HTTP.
 type Server struct {
-	store    *store.Store
-	hub      *hub.Hub
-	topo     topology.Topology
-	topoPath string
-	topoMu   sync.RWMutex
-	web      fs.FS
-	log      *log.Logger
+	store        *store.Store
+	hub          *hub.Hub
+	topo         topology.Topology
+	topoPath     string
+	topoMu       sync.RWMutex
+	settingsPath string
+	mqttCfg      config.MQTT
+	cfgMu        sync.RWMutex
+	mqtt         MQTTController
+	web          fs.FS
+	log          *log.Logger
 }
 
 // New crea il server HTTP. topoPath e' il file su cui salvare le modifiche
 // alla topologia (vuoto = solo in memoria).
-func New(s *store.Store, h *hub.Hub, topo topology.Topology, topoPath string, web fs.FS, logger *log.Logger) *Server {
-	return &Server{store: s, hub: h, topo: topo, topoPath: topoPath, web: web, log: logger}
+func New(s *store.Store, h *hub.Hub, topo topology.Topology, topoPath, settingsPath string, mqttCfg config.MQTT, mqtt MQTTController, web fs.FS, logger *log.Logger) *Server {
+	return &Server{
+		store:        s,
+		hub:          h,
+		topo:         topo,
+		topoPath:     topoPath,
+		settingsPath: settingsPath,
+		mqttCfg:      mqttCfg,
+		mqtt:         mqtt,
+		web:          web,
+		log:          logger,
+	}
 }
 
 // Handler costruisce il router.
@@ -46,6 +68,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("/api/readings", s.handleReadings)
 	mux.HandleFunc("/api/stats", s.handleStats)
 	mux.HandleFunc("/api/topology", s.handleTopology)
+	mux.HandleFunc("/api/settings", s.handleSettings)
 	mux.HandleFunc("/api/schema", s.handleSchema)
 	mux.HandleFunc("/api/query", s.handleQuery)
 	mux.HandleFunc("/api/export", s.handleExport)
@@ -59,15 +82,90 @@ func (s *Server) Handler() http.Handler {
 }
 
 func (s *Server) handleDevices(w http.ResponseWriter, r *http.Request) {
-	devices, err := s.store.ListDevices()
-	if err != nil {
+	switch r.Method {
+	case http.MethodGet:
+		devices, err := s.store.ListDevices()
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, err)
+			return
+		}
+		if devices == nil {
+			devices = []store.Device{}
+		}
+		writeJSON(w, http.StatusOK, map[string]any{"devices": devices})
+	case http.MethodPost:
+		s.addDevice(w, r)
+	default:
+		w.Header().Set("Allow", "GET, POST")
+		writeError(w, http.StatusMethodNotAllowed, fmt.Errorf("metodo non consentito"))
+	}
+}
+
+type deviceInput struct {
+	ID    string   `json:"id"`
+	Label string   `json:"label"`
+	Lat   *float64 `json:"lat"`
+	Lon   *float64 `json:"lon"`
+}
+
+// addDevice registra (o aggiorna) un dispositivo anche prima della prima
+// misura, cosi' compare subito in elenco, mappa e grafo.
+func (s *Server) addDevice(w http.ResponseWriter, r *http.Request) {
+	var in deviceInput
+	if err := json.NewDecoder(io.LimitReader(r.Body, 1<<20)).Decode(&in); err != nil {
+		writeError(w, http.StatusBadRequest, fmt.Errorf("JSON non valido: %w", err))
+		return
+	}
+
+	id := strings.TrimSpace(in.ID)
+	label := strings.TrimSpace(in.Label)
+	if id == "" {
+		writeError(w, http.StatusBadRequest, fmt.Errorf("id dispositivo obbligatorio"))
+		return
+	}
+	if strings.Contains(id, "/") {
+		writeError(w, http.StatusBadRequest, fmt.Errorf("l'id non puo' contenere '/'"))
+		return
+	}
+	if label == "" {
+		label = id
+	}
+	if (in.Lat == nil) != (in.Lon == nil) {
+		writeError(w, http.StatusBadRequest, fmt.Errorf("latitudine e longitudine vanno indicate insieme"))
+		return
+	}
+	if in.Lat != nil && (*in.Lat < -90 || *in.Lat > 90) {
+		writeError(w, http.StatusBadRequest, fmt.Errorf("latitudine fuori intervallo"))
+		return
+	}
+	if in.Lon != nil && (*in.Lon < -180 || *in.Lon > 180) {
+		writeError(w, http.StatusBadRequest, fmt.Errorf("longitudine fuori intervallo"))
+		return
+	}
+
+	s.cfgMu.RLock()
+	cfg := s.mqttCfg
+	s.cfgMu.RUnlock()
+
+	now := time.Now().Unix()
+	d := store.Device{
+		ID:        id,
+		Label:     label,
+		Group:     cfg.Group(),
+		Topic:     cfg.DeviceTopic(id),
+		Lat:       in.Lat,
+		Lon:       in.Lon,
+		FirstSeen: now,
+		LastSeen:  now,
+	}
+	if err := s.store.UpsertDevice(d); err != nil {
 		writeError(w, http.StatusInternalServerError, err)
 		return
 	}
-	if devices == nil {
-		devices = []store.Device{}
+	if data, err := json.Marshal(d); err == nil {
+		s.hub.Broadcast("devices", data)
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"devices": devices})
+	writeJSON(w, http.StatusOK, d)
 }
 
 func (s *Server) handleLatest(w http.ResponseWriter, r *http.Request) {
@@ -165,6 +263,125 @@ func (s *Server) updateTopology(w http.ResponseWriter, r *http.Request) {
 		s.hub.Broadcast("topology", data)
 	}
 	writeJSON(w, http.StatusOK, t)
+}
+
+type mqttView struct {
+	Broker      string `json:"broker"`
+	Prefix      string `json:"prefix"`
+	Topic       string `json:"topic"`
+	Username    string `json:"username"`
+	PasswordSet bool   `json:"password_set"`
+}
+
+type settingsView struct {
+	MQTT   mqttView      `json:"mqtt"`
+	Status broker.Status `json:"status"`
+}
+
+func (s *Server) currentMQTT() config.MQTT {
+	s.cfgMu.RLock()
+	defer s.cfgMu.RUnlock()
+	return s.mqttCfg
+}
+
+func (s *Server) settingsView(cfg config.MQTT) settingsView {
+	v := settingsView{
+		MQTT: mqttView{
+			Broker:      cfg.Broker,
+			Prefix:      cfg.Prefix,
+			Topic:       cfg.Topic,
+			Username:    cfg.Username,
+			PasswordSet: cfg.Password != "",
+		},
+	}
+	if s.mqtt != nil {
+		v.Status = s.mqtt.Status()
+	}
+	if v.Status.Broker == "" {
+		v.Status.Broker = cfg.BrokerURL()
+	}
+	if v.Status.Topic == "" {
+		v.Status.Topic = cfg.Topic
+	}
+	return v
+}
+
+// handleSettings legge o aggiorna broker, prefisso e credenziali MQTT.
+func (s *Server) handleSettings(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodGet:
+		writeJSON(w, http.StatusOK, s.settingsView(s.currentMQTT()))
+	case http.MethodPut, http.MethodPost:
+		s.updateSettings(w, r)
+	default:
+		w.Header().Set("Allow", "GET, PUT")
+		writeError(w, http.StatusMethodNotAllowed, fmt.Errorf("metodo non consentito"))
+	}
+}
+
+type settingsInput struct {
+	Broker        string  `json:"broker"`
+	Prefix        string  `json:"prefix"`
+	Username      *string `json:"username"`
+	Password      string  `json:"password"`
+	ClearPassword bool    `json:"clear_password"`
+}
+
+func (s *Server) updateSettings(w http.ResponseWriter, r *http.Request) {
+	var in settingsInput
+	if err := json.NewDecoder(io.LimitReader(r.Body, 1<<20)).Decode(&in); err != nil {
+		writeError(w, http.StatusBadRequest, fmt.Errorf("JSON non valido: %w", err))
+		return
+	}
+
+	cfg := s.currentMQTT()
+	if b := strings.TrimSpace(in.Broker); b != "" {
+		cfg.Broker = b
+	}
+	if p := strings.TrimSpace(in.Prefix); p != "" {
+		cfg.Prefix = p
+	} else {
+		writeError(w, http.StatusBadRequest, fmt.Errorf("prefisso topic obbligatorio"))
+		return
+	}
+	if in.Username != nil {
+		cfg.Username = strings.TrimSpace(*in.Username)
+	}
+	if in.ClearPassword {
+		cfg.Password = ""
+	} else if in.Password != "" {
+		cfg.Password = in.Password
+	}
+	cfg = cfg.Normalized()
+
+	if err := cfg.Save(s.settingsPath); err != nil {
+		writeError(w, http.StatusInternalServerError, fmt.Errorf("salvataggio impostazioni: %w", err))
+		return
+	}
+
+	s.cfgMu.Lock()
+	s.mqttCfg = cfg
+	s.cfgMu.Unlock()
+
+	var applyErr error
+	if s.mqtt != nil {
+		applyErr = s.mqtt.Apply(broker.Config{
+			URL:      cfg.BrokerURL(),
+			Topic:    cfg.Topic,
+			Username: cfg.Username,
+			Password: cfg.Password,
+		})
+	}
+
+	view := s.settingsView(cfg)
+	if data, err := json.Marshal(view); err == nil {
+		s.hub.Broadcast("settings", data)
+	}
+	if applyErr != nil {
+		writeJSON(w, http.StatusBadGateway, view)
+		return
+	}
+	writeJSON(w, http.StatusOK, view)
 }
 
 func (s *Server) handleSchema(w http.ResponseWriter, r *http.Request) {

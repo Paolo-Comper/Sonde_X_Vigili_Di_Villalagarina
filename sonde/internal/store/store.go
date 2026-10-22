@@ -199,7 +199,7 @@ func (s *Store) Insert(r telemetry.Reading) error {
 		INSERT INTO devices (id, label, group_name, kind, topic, lat, lon, first_seen, last_seen)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 		ON CONFLICT(id) DO UPDATE SET
-			label      = excluded.label,
+			label      = CASE WHEN excluded.label <> excluded.id THEN excluded.label ELSE devices.label END,
 			group_name = excluded.group_name,
 			kind       = excluded.kind,
 			topic      = excluded.topic,
@@ -528,6 +528,32 @@ func scanMeasurement(rows *sql.Rows) (Measurement, error) {
 	}
 	m.Exported = exported != 0
 	return m, nil
+}
+
+// UpsertDevice inserisce o aggiorna un dispositivo noto, anche prima che
+// arrivi una misura. I campi vuoti non cancellano quelli gia' presenti.
+func (s *Store) UpsertDevice(d Device) error {
+	now := time.Now().Unix()
+	if d.FirstSeen == 0 {
+		d.FirstSeen = now
+	}
+	if d.LastSeen == 0 {
+		d.LastSeen = now
+	}
+	_, err := s.db.Exec(`
+		INSERT INTO devices (id, label, group_name, kind, topic, lat, lon, first_seen, last_seen)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+		ON CONFLICT(id) DO UPDATE SET
+			label      = CASE WHEN excluded.label      <> '' THEN excluded.label      ELSE devices.label      END,
+			group_name = CASE WHEN excluded.group_name <> '' THEN excluded.group_name ELSE devices.group_name END,
+			kind       = CASE WHEN excluded.kind       <> '' THEN excluded.kind       ELSE devices.kind       END,
+			topic      = CASE WHEN excluded.topic      <> '' THEN excluded.topic      ELSE devices.topic      END,
+			lat        = COALESCE(excluded.lat, devices.lat),
+			lon        = COALESCE(excluded.lon, devices.lon),
+			first_seen = MIN(devices.first_seen, excluded.first_seen),
+			last_seen  = MAX(devices.last_seen, excluded.last_seen)`,
+		d.ID, d.Label, d.Group, d.Kind, d.Topic, nf(d.Lat), nf(d.Lon), d.FirstSeen, d.LastSeen)
+	return err
 }
 
 func nf(v *float64) any {

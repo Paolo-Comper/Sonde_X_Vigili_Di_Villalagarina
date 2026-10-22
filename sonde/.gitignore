@@ -2,3 +2,5 @@
 *.db
 *.db-shm
 *.db-wal
+sonde-settings.json
+sonde-settings.json.tmp

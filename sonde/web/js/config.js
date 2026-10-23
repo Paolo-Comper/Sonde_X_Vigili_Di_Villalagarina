@@ -13,6 +13,29 @@ function currentPrefix() {
   return p.replace(/\/+$/, '');
 }
 
+function currentSensorId() {
+  return selectedDevice && selectedDevice !== ALL ? selectedDevice : '';
+}
+
+/* Topic del sensore selezionato (o filtro dell'osservatorio per "Tutti i sensori"). */
+function currentTopicForDisplay() {
+  const prefix = currentPrefix();
+  if (!prefix) return '#';
+  if (prefix.includes('+') || prefix.includes('#')) return topicFromPrefix(prefix);
+  const sensor = currentSensorId();
+  return sensor ? prefix + '/' + sensor : topicFromPrefix(prefix);
+}
+
+function updateTopicDisplay() {
+  const el = $('currentTopic');
+  if (!el) return;
+  const topic = currentTopicForDisplay();
+  el.textContent = topic;
+  el.title = currentSensorId()
+    ? 'Topic del sensore selezionato. E\' accettato anche ' + topic + '/data. La dashboard riceve tutti i sensori sotto l\'osservatorio.'
+    : 'La dashboard ascolta tutti i sensori sotto l\'osservatorio.';
+}
+
 function renderDeviceTopicPreview() {
   const el = $('deviceTopicPreview');
   if (!el) return;
@@ -27,7 +50,9 @@ function renderMQTTStatus() {
   const st = mqttStatus || {};
   el.className = 'status-indicator ' + (st.connected ? 'connected' : 'disconnected');
   el.textContent = st.connected ? 'Connesso' : (st.error ? 'Errore' : 'Disconnesso');
-  el.title = st.error || '';
+  el.title = st.error
+    ? 'MQTT: ' + st.error
+    : 'Connessione del server al broker MQTT.';
 }
 
 function renderMQTT() {
@@ -35,19 +60,7 @@ function renderMQTT() {
   if (prefixEl && document.activeElement !== prefixEl) prefixEl.value = mqttConfig.prefix || '';
   const brokerEl = $('brokerInput');
   if (brokerEl && document.activeElement !== brokerEl) brokerEl.value = mqttConfig.broker || '';
-  const userEl = $('mqttUser');
-  if (userEl && document.activeElement !== userEl) userEl.value = mqttConfig.username || '';
-  const clearPass = $('mqttClearPass');
-  if (clearPass) {
-    clearPass.checked = false;
-    $('mqttPass').disabled = false;
-  }
-
-  const topicEl = $('currentTopic');
-  if (topicEl) {
-    topicEl.textContent = mqttConfig.topic ||
-      topicFromPrefix(prefixEl ? prefixEl.value : '');
-  }
+  updateTopicDisplay();
   renderMQTTStatus();
   renderDeviceTopicPreview();
 }
@@ -80,10 +93,7 @@ async function applySettings() {
 
   const body = {
     broker: $('brokerInput').value.trim(),
-    prefix: prefix,
-    username: $('mqttUser').value,
-    password: $('mqttPass').value,
-    clear_password: $('mqttClearPass').checked
+    prefix: prefix
   };
 
   button.disabled = true;
@@ -98,7 +108,6 @@ async function applySettings() {
     mqttConfig = data.mqtt || mqttConfig;
     mqttStatus = data.status || {};
     renderMQTT();
-    $('mqttPass').value = '';
     if (!res.ok) {
       throw new Error((data.status && data.status.error) || data.error || res.statusText);
     }
@@ -176,7 +185,7 @@ async function saveDevice() {
     if (!res.ok) throw new Error(data.error || res.statusText);
 
     closeDevice();
-    configMessage('Dispositivo "' + (data.label || id) + '" aggiunto.', true);
+    configMessage('Sensore "' + (data.label || id) + '" aggiunto.', true);
     await Promise.all([loadDevices(), loadStats()]);
     render();
   } catch (err) {
@@ -201,20 +210,14 @@ function initConfig() {
   const prefix = $('topicPrefixInput');
   if (prefix) {
     prefix.addEventListener('input', () => {
-      $('currentTopic').textContent = topicFromPrefix(prefix.value);
+      updateTopicDisplay();
       renderDeviceTopicPreview();
     });
   }
+  const sensor = $('deviceSelect');
+  if (sensor) sensor.addEventListener('change', updateTopicDisplay);
   const id = $('deviceId');
   if (id) id.addEventListener('input', renderDeviceTopicPreview);
-
-  const clearPass = $('mqttClearPass');
-  if (clearPass) {
-    clearPass.addEventListener('change', () => {
-      $('mqttPass').disabled = clearPass.checked;
-      if (clearPass.checked) $('mqttPass').value = '';
-    });
-  }
 
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape' && !$('deviceOverlay').hidden) closeDevice();

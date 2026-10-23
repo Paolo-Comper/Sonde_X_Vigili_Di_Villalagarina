@@ -12,7 +12,7 @@ function renderDeviceSelect() {
   const sel = $('deviceSelect');
   if (!sel) return;
   const list = visibleDevices();
-  let html = '<option value="' + ALL + '">Tutti i dispositivi</option>';
+  let html = '<option value="' + ALL + '">Tutti i sensori</option>';
   list.forEach(d => {
     html += '<option value="' + escapeHtml(d.id) + '">' + escapeHtml(d.label) + '</option>';
   });
@@ -20,6 +20,7 @@ function renderDeviceSelect() {
   const keep = selectedDevice !== ALL && list.some(d => d.id === selectedDevice);
   sel.value = keep ? selectedDevice : ALL;
   selectedDevice = sel.value;
+  updateTopicDisplay();
 }
 
 function render() {

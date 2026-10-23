@@ -179,15 +179,6 @@ tr.exported td { background: rgba(46, 204, 113, 0.08); }
 
 /* Configurazione MQTT e dispositivi. */
 .mqtt-row .control-group input { min-width: 150px; }
-.check-inline {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-top: 5px;
-  font-size: 12px;
-  color: var(--muted);
-}
-.check-inline input { min-width: 0 !important; }
 .topic-code {
   background: var(--bg);
   border: 1px solid var(--border);

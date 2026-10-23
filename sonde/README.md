@@ -10,7 +10,7 @@ Villalagarina. Un solo binario Go che:
 - disegna sulla mappa i **collegamenti di affluenza** tra le sonde (frecce) e
   ne mostra il **grafo**;
 - esporta i dati in **CSV/JSON** con query SQL personalizzabile;
-- permette di configurare **broker, prefisso del topic e dispositivi** direttamente dalla dashboard, senza riavviare.
+- permette di configurare **broker, osservatorio e sensori** direttamente dalla dashboard, senza riavviare.
 
 Il progetto nasce come evoluzione di
 [mimosa-dashboard](https://github.com/Paolo-Comper/mimosa-dashboard), ma
@@ -86,11 +86,15 @@ PORT=9000 ./sonde
 
 Nel pannello in alto si possono cambiare senza riavviare:
 
-- **Prefisso topic** (es. `421342415`): l'app si sottoscrive a
-  `{prefisso}/#`. Si puo' inserire anche un filtro completo con `+` o `#`;
-- **Broker MQTT**, **utente** e **password** (vuota = mantiene quella salvata,
-  spunta "rimuovi" per cancellarla);
-- **+ Dispositivo**: registra una sonda prima ancora che invii dati, con ID
+- **Osservatorio** (es. `uniurb/aserpieri/test/marconi0`): e' la radice dei
+  topic; l'app si sottoscrive a `{osservatorio}/#`. Si puo' inserire anche un
+  filtro completo con `+` o `#`;
+- **Sensore**: scegli `Tutti i sensori` oppure un sensore specifico. Il campo
+  **Topic** mostra il topic risultante: `{osservatorio}/{sensore}` per un
+  sensore, `{osservatorio}/#` per tutti;
+- **Broker MQTT** (le eventuali credenziali si impostano con i flag
+  `--username` / `--password` o nel file delle impostazioni);
+- **+ Sensore**: registra una sonda prima ancora che invii dati, con ID
   (segmento del topic), nome visualizzato e coordinate opzionali. Compare
   subito nell'elenco, sulla mappa e nel grafo.
 

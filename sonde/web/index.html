@@ -39,42 +39,35 @@
   <section class="panel controls">
     <div class="panel-row">
       <div class="control-group">
-        <label for="deviceSelect">Dispositivo:</label>
-        <select id="deviceSelect"></select>
+        <label>Server</label>
+        <span id="connectionStatus" class="status-indicator disconnected"
+              title="Connessione della dashboard al server locale (aggiornamenti in tempo reale).">Connessione...</span>
       </div>
       <div class="control-group">
-        <label>Stato:</label>
-        <span id="connectionStatus" class="status-indicator disconnected">Connessione...</span>
+        <label>MQTT</label>
+        <span id="mqttStatus" class="status-indicator disconnected"
+              title="Connessione del server al broker MQTT.">&mdash;</span>
       </div>
     </div>
     <div class="panel-row mqtt-row">
       <div class="control-group">
-        <label for="topicPrefixInput">Prefisso topic</label>
-        <input id="topicPrefixInput" type="text" spellcheck="false" placeholder="421342415">
+        <label for="topicPrefixInput">Osservatorio</label>
+        <input id="topicPrefixInput" type="text" spellcheck="false" placeholder="uniurb/aserpieri/test/marconi0">
+      </div>
+      <div class="control-group">
+        <label for="deviceSelect">Sensore</label>
+        <select id="deviceSelect"></select>
       </div>
       <div class="control-group">
         <label for="brokerInput">Broker MQTT</label>
         <input id="brokerInput" type="text" spellcheck="false" placeholder="broker.hivemq.com:1883">
       </div>
       <div class="control-group">
-        <label for="mqttUser">Utente (opzionale)</label>
-        <input id="mqttUser" type="text" spellcheck="false" autocomplete="username">
-      </div>
-      <div class="control-group">
-        <label for="mqttPass">Password (opzionale)</label>
-        <input id="mqttPass" type="password" autocomplete="current-password" placeholder="invariata">
-        <label class="check-inline"><input id="mqttClearPass" type="checkbox"> rimuovi</label>
-      </div>
-      <div class="control-group">
-        <label>Topic in ascolto</label>
+        <label>Topic</label>
         <code id="currentTopic" class="topic-code">&mdash;</code>
       </div>
-      <div class="control-group">
-        <label>Stato MQTT</label>
-        <span id="mqttStatus" class="status-indicator disconnected">&mdash;</span>
-      </div>
       <button id="mqttApply" class="btn btn-primary" type="button">Applica</button>
-      <button id="deviceAddBtn" class="btn" type="button">+ Dispositivo</button>
+      <button id="deviceAddBtn" class="btn" type="button">+ Sensore</button>
     </div>
     <div id="configMessage" class="export-message"></div>
     <div class="panel-row stats-row">
@@ -208,11 +201,11 @@
 <div id="deviceOverlay" class="overlay" hidden>
   <div class="modal modal-small">
     <div class="panel-row between">
-      <h3>Aggiungi dispositivo</h3>
+      <h3>Aggiungi sensore</h3>
       <button id="deviceClose" class="btn btn-ghost" type="button">&#10005;</button>
     </div>
     <p class="muted">
-      L'ID &egrave; il segmento del topic: con il prefisso corrente il dispositivo
+      L'ID &egrave; il segmento del topic: con l'osservatorio corrente il sensore
       pubblica su <code id="deviceTopicPreview">&mdash;</code>.
     </p>
     <div class="config-grid">

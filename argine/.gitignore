@@ -1,0 +1,6 @@
+/argine
+*.db
+*.db-shm
+*.db-wal
+argine-settings.json
+argine-settings.json.tmp

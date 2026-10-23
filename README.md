@@ -1,6 +1,6 @@
-# Progetto Sonde per i Vigili del Fuoco – Villalagarina
+# Progetto Argine per i Vigili del Fuoco – Villalagarina
 
-Sistema di monitoraggio di piu' sonde (livello dei corsi d'acqua e qualita'
+Sistema di monitoraggio di piu' sensori (livello dei corsi d'acqua e qualita'
 dell'aria) che inviano le misure via MQTT; un'unica applicazione le raccoglie,
 le salva su SQLite e le mostra in una dashboard web.
 
@@ -8,22 +8,22 @@ le salva su SQLite e le mostra in una dashboard web.
 
 | Cartella | Contenuto |
 |----------|-----------|
-| [`sonde/`](sonde/) | L'applicazione completa (server MQTT + dashboard web) |
+| [`argine/`](argine/) | L'applicazione completa (server MQTT + dashboard web) |
 | [`Esp32Sim/`](Esp32Sim/) | Firmware/simulatore ESP32 che pubblica le misure |
 
-### Applicazione (`sonde/`)
+### Applicazione (`argine/`)
 
 Un solo binario Go: si collega al broker MQTT, gestisce piu' dispositivi
 contemporaneamente, salva su SQLite, serve la dashboard incorporata ed esporta
 i dati in CSV/JSON con query SQL.
 
 ```bash
-cd sonde
-go build -o sonde .
-./sonde --no-browser
+cd argine
+go build -o argine .
+./argine --no-browser
 ```
 
-Dettagli, opzioni e API: vedi [`sonde/README.md`](sonde/README.md).
+Dettagli, opzioni e API: vedi [`argine/README.md`](argine/README.md).
 
 ### Firmware ESP32 (`Esp32Sim/`)
 
@@ -45,7 +45,7 @@ pio run -t upload
 ## Avvio rapido (senza hardware)
 
 ```bash
-cd sonde
+cd argine
 go run . --test
 ```
 
